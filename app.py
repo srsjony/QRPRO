@@ -153,7 +153,7 @@ VALUES (?,?,?,0)
 # ================= QR  =================
 @app.route('/qr/<username>')
 def generate_qr(username):
-    menu_url = f"https://your-app-name.onrender.com/menu/{username}"
+    menu_url = f"https://qrpro-1.onrender.com/menu/{username}"
 
     # 🔥 CREATE QR
     qr = qrcode.QRCode(
