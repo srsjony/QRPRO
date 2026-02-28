@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login</title>
+<style>
+body {
+    font-family: 'Segoe UI';
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    margin:0;
+}
+.card {
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    width:300px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+input {
+    width:100%;
+    padding:10px;
+    margin:10px 0;
+    border-radius:8px;
+    border:1px solid #ccc;
+}
+button {
+    width:100%;
+    padding:10px;
+    background:#667eea;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+a {
+    display:block;
+    text-align:center;
+    margin-top:10px;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+<h2 style="text-align:center;">
+{% if register %}Register{% else %}Login{% endif %}
+</h2>
+
+<form method="POST">
+<input name="username" placeholder="Username">
+<input name="password" placeholder="Password" type="password">
+<input name="whatsapp" placeholder="WhatsApp Number (91XXXXXXXXXX)">
+<button>Submit</button>
+</form>
+
+{% if not register %}
+<a href="/register">Create Account</a>
+{% endif %}
+</div>
+
+</body>
+</html>

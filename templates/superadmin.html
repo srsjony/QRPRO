@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Super Admin</title>
+
+<style>
+body {
+    font-family: 'Segoe UI';
+    background:#f5f6fa;
+    padding:20px;
+}
+
+.card {
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+
+table {
+    width:100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding:10px;
+    border-bottom:1px solid #ddd;
+}
+
+button {
+    padding:6px 10px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+.delete-btn {
+    background:red;
+    color:white;
+}
+</style>
+
+</head>
+<body>
+
+<h2>Super Admin Panel</h2>
+
+<div class="card">
+
+<table>
+<tr>
+<th>ID</th>
+<th>Restaurant</th>
+<th>WhatsApp</th>
+<th>Expiry</th>
+<th>Menu</th>
+<th>Action</th>
+</tr>
+
+{% for u in users %}
+<tr>
+<td>{{u.id}}</td>
+<td>{{u.username}}</td>
+<td>{{u.whatsapp}}</td>
+<td>{{u.expiry if u.expiry else 'No expiry'}}</td>
+<td>{{u.menu_count}}</td>
+<td>
+<td>
+
+<!-- DELETE -->
+<a href="/delete_user/{{u.id}}">
+<button style="background:red;">Delete</button>
+</a>
+
+<a href="/qr/{{u.username}}" target="_blank">
+<button style="background:purple;">QR</button>
+</a>
+
+<a href="/qr/{{u.username}}" download="qr_{{u.username}}.png">
+<button style="background:orange;">Download QR</button>
+</a>
+
+<!-- SET EXPIRY -->
+<a href="/set_expiry/{{u.id}}">
+<button style="background:orange;">Set Expiry</button>
+</a>
+
+<!-- EDIT -->
+<a href="/edit_user/{{u.id}}">
+<button style="background:blue;">Edit</button>
+</a>
+
+</td>
+</td>
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+</html>

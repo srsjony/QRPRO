@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+
+<style>
+body {
+    font-family: 'Segoe UI';
+    margin:0;
+    background:#f5f6fa;
+}
+
+.header {
+    background:#667eea;
+    color:white;
+    padding:15px;
+    font-size:20px;
+}
+
+.container {
+    padding:20px;
+}
+
+.card {
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    margin-bottom:20px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+
+input {
+    padding:10px;
+    margin:5px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    width:100%;
+}
+
+button {
+    padding:10px 15px;
+    background:#667eea;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.menu-item {
+    display:flex;
+    justify-content:space-between;
+    padding:10px;
+    border-bottom:1px solid #eee;
+    align-items:center;
+}
+
+img {
+    border-radius:6px;
+}
+
+/* 🔥 NEW: Upload highlight */
+.upload-box {
+    border:2px dashed #667eea;
+    padding:15px;
+    text-align:center;
+    border-radius:10px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="header">
+Welcome {{username}}
+</div>
+
+<div class="container">
+
+<!-- 🔥 RESTAURANT SETTINGS -->
+<div class="card">
+<h3>Restaurant Settings</h3>
+
+<form method="POST" action="/update_restaurant" enctype="multipart/form-data">
+
+<input name="address" placeholder="Enter Restaurant Address" value="{{address}}">
+<input type="file" name="banner">
+
+<button type="submit">Update Restaurant</button>
+
+</form>
+</div>
+
+<!-- 🔥 BULK MENU UPLOAD -->
+<div class="card">
+<h3>📊 Bulk Upload Menu (Excel)</h3>
+
+<div class="upload-box">
+<form action="/upload_excel" method="POST" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".xlsx" required>
+    <button type="submit">Upload Excel</button>
+</form>
+
+<p style="font-size:12px;color:gray;">
+Format: item | price | category
+</p>
+</div>
+</div>
+
+<!-- ADD MENU -->
+<div class="card">
+<h3>Add Menu Item</h3>
+
+<form method="POST" enctype="multipart/form-data"> 
+
+<input name="item" placeholder="Item">
+<input name="price" placeholder="Price">
+<input name="category" placeholder="Category">
+<input type="file" name="image">
+
+<button>Add</button>
+
+</form>
+</div>
+
+<!-- MENU LIST -->
+<div class="card">
+<h3>Your Menu</h3>
+
+{% for d in data %}
+<div class="menu-item">
+
+<div>
+<img src="/static/uploads/{{d[4] if d[4] else 'default.jpg'}}" width="60">
+<b>{{d[1]}}</b><br>
+₹{{d[2]}} | {{d[3]}}
+</div>
+
+<div>
+<a href="/edit/{{d[0]}}">✏️ Edit</a><br>
+<a href="/delete/{{d[0]}}" style="color:red;">🗑 Delete</a>
+</div>
+
+</div>
+{% endfor %}
+
+</div>
+
+<!-- QR -->
+<div class="card">
+<h3>Your QR Link</h3>
+<input value="http://127.0.0.1:5000/menu/{{username}}" readonly>
+</div>
+
+</div>
+
+</body>
+</html>
