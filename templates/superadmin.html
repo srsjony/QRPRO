@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Super Admin</title>
+
+<style>
+:root {
+    --bg: #eef1f8;
+    --card: #ffffff;
+    --text: #1f2433;
+    --border: #e7eaf3;
+    --primary: #2d3436;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f6fa, #dfe6e9);
+    padding: 16px;
+    margin: 0;
+    color: var(--text);
+}
+
+h2 {
+    margin: 0 0 16px;
+    font-size: 24px;
+    animation: fadeUp 0.4s ease both;
+}
+
+.card {
+    background: var(--card);
+    padding: 16px;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    border: 1px solid var(--border);
+    animation: fadeUp 0.45s ease both;
+}
+
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 10px;
+}
+
+table {
+    width: 100%;
+    min-width: 880px;
+    border-collapse: collapse;
+}
+
+th {
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+}
+
+th, td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+tr:hover {
+    background: #f7f8fc;
+}
+
+.actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.actions a {
+    text-decoration: none;
+}
+
+button {
+    padding: 7px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    opacity: 0.92;
+}
+
+.btn-delete { background: #e74c3c; color: white; }
+.btn-qr { background: #6c5ce7; color: white; }
+.btn-png { background: #fd7e14; color: white; }
+.btn-pdf { background: #111; color: #C9A14A; }
+.btn-expiry { background: #f39c12; color: white; }
+.btn-edit { background: #0984e3; color: white; }
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.expired {
+    background: #e74c3c;
+    color: white;
+}
+
+.active {
+    background: #2ecc71;
+    color: white;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    body { padding: 12px; }
+    h2 { font-size: 21px; }
+    .card { padding: 12px; border-radius: 12px; }
+    th, td { padding: 10px 8px; font-size: 13px; }
+}
+</style>
+
+</head>
+<body>
+
+<h2>🚀 Super Admin Panel</h2>
+
+<div class="card">
+<div class="table-wrap">
+<table>
+<tr>
+<th>ID</th>
+<th>Restaurant</th>
+<th>WhatsApp</th>
+<th>Expiry</th>
+<th>Menu</th>
+<th>Actions</th>
+</tr>
+
+{% for u in users %}
+<tr>
+<td>{{u.id}}</td>
+<td><b>{{u.username}}</b></td>
+<td>{{u.whatsapp}}</td>
+
+<td>
+{% if u.expiry %}
+    {% if u.expiry < today %}
+        <span class="badge expired">Expired</span><br>
+        {{u.expiry}}
+    {% else %}
+        <span class="badge active">Active</span><br>
+        {{u.expiry}}
+    {% endif %}
+{% else %}
+    No expiry
+{% endif %}
+</td>
+
+<td>{{u.menu_count}}</td>
+
+<td>
+<div class="actions">
+<a href="/delete_user/{{u.id}}"><button class="btn-delete">Delete</button></a>
+<a href="/qr/{{u.username}}" target="_blank"><button class="btn-qr">Preview</button></a>
+<a href="/qr/{{u.username}}?type=png"><button class="btn-png">PNG</button></a>
+<a href="/qr/{{u.username}}?type=pdf"><button class="btn-pdf">PDF</button></a>
+<a href="/set_expiry/{{u.id}}"><button class="btn-expiry">Expiry</button></a>
+<a href="/edit_user/{{u.id}}"><button class="btn-edit">Edit</button></a>
+</div>
+</td>
+
+</tr>
+{% endfor %}
+
+</table>
+</div>
+</div>
+
+</body>
+</html>
