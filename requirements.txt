@@ -3,4 +3,5 @@ pandas
 qrcode
 Pillow
 openpyxl
+reportlab
 gunicorn
