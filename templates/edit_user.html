@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(145deg, #eef2ff, #f8f9ff);
+        }
+        .card {
+            width: min(420px, 100%);
+            background: #fff;
+            border: 1px solid #e2e7f3;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        h3 { margin-top: 0; margin-bottom: 12px; }
+        input {
+            width: 100%;
+            padding: 11px;
+            border-radius: 10px;
+            border: 1px solid #ccd3e8;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            padding: 11px;
+            background: #667eea;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover { background: #5366d7; }
+    </style>
+</head>
+<body>
+    <form class="card" method="POST">
+        <h3>Edit User</h3>
+        <input name="username" value="{{user.username}}" required>
+        <input name="whatsapp" value="{{user.whatsapp}}" required>
+        <button>Update</button>
+    </form>
+</body>
+</html>

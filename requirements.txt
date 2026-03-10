@@ -1,7 +1,9 @@
 Flask
+flask-sqlalchemy
 pandas
 qrcode
 Pillow
 openpyxl
 reportlab
 gunicorn
+python-dotenv

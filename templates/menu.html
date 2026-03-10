@@ -1,9 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-preset="{{ theme_preset | default('default') }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>{{username}} — Menu</title>
+<meta name="description" content="Browse the menu of {{username}}. Order your favorite dishes directly via WhatsApp.">
+
+<!-- Open Graph / Social -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{username}} — Digital Menu">
+<meta property="og:description" content="Browse the menu and order via WhatsApp. {{address}}">
+<meta property="og:image" content="{% if logo %}/static/uploads/{{logo}}{% elif banner %}/static/uploads/{{banner}}{% else %}/static/logo.png{% endif %}">
+<meta property="og:url" content="/menu/{{username}}">
+
+<!-- PWA -->
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#c8873a">
+<link rel="icon" href="{% if logo %}/static/uploads/{{logo}}{% else %}/static/logo.png{% endif %}" type="image/png">
+<link rel="apple-touch-icon" href="{% if logo %}/static/uploads/{{logo}}{% else %}/static/logo.png{% endif %}">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,6 +44,124 @@
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+}
+
+/* ═══════════════════════════════════════════
+   LIGHT THEME
+═══════════════════════════════════════════ */
+[data-theme="light"] {
+  --obsidian:   #f8f6f3;
+  --coal:       #ffffff;
+  --ash:        #f0ece7;
+  --ember:      #b87a2e;
+  --ember-glow: #9a6520;
+  --ember-dim:  #c49a5c;
+  --cream:      #1a1714;
+  --cream-muted:#6b6158;
+  --divider:    rgba(140,100,40,0.18);
+  --card-bg:    #ffffff;
+}
+[data-theme="light"] .nav {
+  background: rgba(248,246,243,0.92);
+}
+[data-theme="light"] .table-strip {
+  background: rgba(240,236,231,0.95);
+}
+[data-theme="light"] .hero-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(248,246,243,0.96) 0%,
+    rgba(248,246,243,0.45) 55%,
+    rgba(248,246,243,0.1) 100%
+  );
+}
+[data-theme="light"] .backdrop {
+  background: rgba(0,0,0,0.35);
+}
+[data-theme="light"] .modal-bg {
+  background: rgba(0,0,0,0.4);
+}
+
+/* ═══════════════════════════════════════════
+   PRESET: MODERN MINIMALIST
+═══════════════════════════════════════════ */
+[data-preset="modern"] {
+  --obsidian:   #0a0a0a;
+  --coal:       #121212;
+  --ash:        #1f1f1f;
+  --ember:      #3b82f6; /* crisp blue */
+  --ember-glow: #60a5fa;
+  --ember-dim:  #2563eb;
+  --cream:      #f9fafb;
+  --cream-muted:#9ca3af;
+  --divider:    rgba(255,255,255,0.08);
+  --card-bg:    #18181b;
+
+  --ff-display: 'Inter', system-ui, sans-serif;
+  --ff-body:    'Inter', system-ui, sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-full: 4px;
+}
+[data-preset="modern"][data-theme="light"] {
+  --obsidian:   #ffffff;
+  --coal:       #f9fafb;
+  --ash:        #f3f4f6;
+  --ember:      #2563eb;
+  --ember-glow: #3b82f6;
+  --ember-dim:  #1d4ed8;
+  --cream:      #111827;
+  --cream-muted:#6b7280;
+  --divider:    rgba(0,0,0,0.08);
+  --card-bg:    #ffffff;
+}
+
+/* ═══════════════════════════════════════════
+   PRESET: PLAYFUL & VIBRANT
+═══════════════════════════════════════════ */
+[data-preset="playful"] {
+  --obsidian:   #13241b; /* deep forest */
+  --coal:       #1a3326;
+  --ash:        #234232;
+  --ember:      #ff7b54; /* warm coral */
+  --ember-glow: #ff9170;
+  --ember-dim:  #e0623e;
+  --cream:      #fffdf7;
+  --cream-muted:#91b09f;
+  --divider:    rgba(255,123,84,0.15);
+  --card-bg:    #1d382a;
+
+  --ff-display: 'Nunito', 'Quicksand', sans-serif;
+  --ff-body:    'Nunito', sans-serif;
+
+  --radius-sm: 16px;
+  --radius-md: 20px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+  --radius-full: 999px;
+  
+  --ease-out-expo: cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncier global ease */
+}
+[data-preset="playful"][data-theme="light"] {
+  --obsidian:   #fdfcf7; /* warm off-white */
+  --coal:       #ffffff;
+  --ash:        #f4f1e1;
+  --ember:      #f06b43;
+  --ember-glow: #fa815c;
+  --ember-dim:  #d9562e;
+  --cream:      #1c2e25;
+  --cream-muted:#507060;
+  --divider:    rgba(240,107,67,0.15);
+  --card-bg:    #ffffff;
 }
 
 /* ═══════════════════════════════════════════
@@ -97,18 +229,33 @@ body {
 ═══════════════════════════════════════════ */
 .nav {
   position: sticky; top: 0; z-index: 200;
-  height: 58px;
-  background: rgba(11,10,9,0.88);
+  /* Auto height based on content */
+  padding: 8px 18px;
+  background: rgba(11,10,9,0.95);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border-bottom: 1px solid var(--divider);
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center; gap: 12px;
+}
+.nav-logo {
+  width: 44px; height: 44px; border-radius: var(--radius-full);
+  object-fit: cover; border: 1.5px solid var(--ember);
+  background: var(--card-bg); flex-shrink: 0;
+}
+.nav-text {
+  display: flex; flex-direction: column; justify-content: center; flex: 1; min-width: 0;
 }
 .nav-title {
   font-family: var(--ff-display);
-  font-size: 22px; font-weight: 600;
-  letter-spacing: 0.16em; text-transform: uppercase;
+  font-size: 18px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--ember-glow);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nav-slogan {
+  font-size: 11px; font-weight: 500; font-style: italic;
+  color: var(--ember);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* ═══════════════════════════════════════════
@@ -135,7 +282,7 @@ body {
   color: var(--ember);
   background: rgba(200,135,58,0.08);
   border: 1px solid var(--divider);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 6px 14px;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s, color 0.2s;
@@ -151,10 +298,11 @@ body {
 ═══════════════════════════════════════════ */
 .hero {
   position: relative;
-  height: clamp(200px, 35vw, 320px);
+  min-height: clamp(240px, 45vw, 360px);
   overflow: hidden;
 }
 .hero-img {
+  position: absolute; inset: 0;
   width: 100%; height: 100%;
   object-fit: cover; display: block;
   transition: transform 0.7s var(--ease-out-expo);
@@ -172,6 +320,14 @@ body {
   display: flex; flex-direction: column;
   justify-content: flex-end;
   padding: clamp(16px, 3vw, 28px);
+  z-index: 2;
+}
+.hero-logo {
+  width: 52px; height: 52px; border-radius: var(--radius-full);
+  object-fit: cover; border: 2px solid var(--ember);
+  background: var(--card-bg); box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  margin-bottom: 8px;
+  animation: heroUp 0.9s var(--ease-out-expo) 0.1s both;
 }
 .hero-name {
   font-family: var(--ff-display);
@@ -180,6 +336,12 @@ body {
   color: var(--ember-glow);
   letter-spacing: 0.04em;
   animation: heroUp 0.9s var(--ease-out-expo) 0.2s both;
+}
+.hero-slogan {
+  margin-top: 6px;
+  font-size: 14px; font-weight: 500; font-style: italic;
+  color: var(--ember); letter-spacing: 0.02em;
+  animation: heroUp 0.9s var(--ease-out-expo) 0.25s both;
 }
 .hero-address {
   margin-top: 6px;
@@ -208,7 +370,7 @@ body {
   width: 100%;
   background: var(--ash);
   border: 1px solid var(--divider);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   padding: 12px 16px 12px 40px;
   font-family: var(--ff-body);
   font-size: 14px;
@@ -240,7 +402,7 @@ body {
   font-size: 12px; font-weight: 500;
   letter-spacing: 0.06em; text-transform: uppercase;
   padding: 8px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   border: 1px solid var(--divider);
   background: transparent;
   color: var(--cream-muted);
@@ -293,7 +455,7 @@ body {
 .menu-card {
   background: var(--card-bg);
   border: 1px solid var(--divider);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
   display: flex; flex-direction: column;
   animation: cardIn 0.55s var(--ease-out-expo) both;
@@ -359,13 +521,16 @@ body {
   color: var(--ember-glow); white-space: nowrap;
 }
 
-/* ADD BUTTON */
+/* ADD BUTTON & CARD QTY ROW */
+.add-btn-wrap {
+  margin-top: auto;
+}
 .add-btn {
-  width: 100%; margin-top: auto;
+  width: 100%;
   font-family: var(--ff-body);
   font-size: 12px; font-weight: 500;
   letter-spacing: 0.1em; text-transform: uppercase;
-  padding: 11px 16px; border-radius: 10px;
+  padding: 11px 16px; border-radius: var(--radius-md);
   border: 1px solid var(--divider);
   background: transparent; color: var(--cream-muted);
   cursor: pointer; position: relative; overflow: hidden;
@@ -386,6 +551,42 @@ body {
 .add-btn.added { background: #22c55e; border-color: #22c55e; }
 .add-btn.added::after { display: none; }
 .add-btn.added .btn-text { color: white; }
+
+.card-qty-row {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  background: rgba(200,135,58,0.08);
+  border: 1px solid var(--ember);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+}
+.card-qty-row .cq-btn {
+  width: 34px; height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
+  background: var(--ash);
+  color: var(--cream);
+  font-size: 18px; font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+}
+.card-qty-row .cq-btn:hover {
+  background: var(--ember);
+  color: var(--obsidian);
+  border-color: var(--ember);
+}
+.card-qty-row .cq-val {
+  font-family: var(--ff-display);
+  font-size: 20px; font-weight: 700;
+  color: var(--ember-glow);
+  min-width: 30px; text-align: center;
+}
+.card-qty-row .cq-label {
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--cream-muted);
+}
 
 /* ═══════════════════════════════════════════
    NO RESULTS
@@ -596,6 +797,10 @@ body {
   box-shadow: 0 10px 28px rgba(37,162,68,0.5);
 }
 .order-btn:active { transform: scale(0.97); }
+.wa-btn {
+  background: linear-gradient(135deg, #25d366, #128c3e) !important;
+  box-shadow: 0 6px 20px rgba(37,211,102,0.3) !important;
+}
 
 /* ═══════════════════════════════════════════
    TABLE MODAL
@@ -643,7 +848,7 @@ body {
 .table-cell {
   background: var(--card-bg);
   border: 1px solid var(--divider);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   aspect-ratio: 1;
   display: flex; align-items: center; justify-content: center;
   flex-direction: column; gap: 2px;
@@ -673,6 +878,110 @@ body {
 }
 
 /* ═══════════════════════════════════════════
+   TOAST SNACKBAR
+═══════════════════════════════════════════ */
+.toast-container {
+  position: fixed; bottom: 100px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+  pointer-events: none;
+}
+.toast-snack {
+  background: rgba(20,18,16,0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  padding: 12px 22px;
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--ff-body);
+  font-size: 14px; font-weight: 500;
+  color: var(--cream);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  animation: toastUp 0.35s var(--ease-out-expo) both;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+[data-theme="light"] .toast-snack {
+  background: rgba(26,23,20,0.9);
+  color: #f2e8d9;
+}
+.toast-snack .toast-icon {
+  font-size: 18px;
+}
+.toast-snack.toast-out {
+  animation: toastDown 0.25s ease forwards;
+}
+@keyframes toastUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toastDown {
+  to { opacity: 0; transform: translateY(20px) scale(0.95); }
+}
+
+/* ═══════════════════════════════════════════
+   IMAGE SHIMMER
+═══════════════════════════════════════════ */
+.card-img-wrap.shimmer::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: 2;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(200,135,58,0.08) 40%,
+    rgba(200,135,58,0.14) 50%,
+    rgba(200,135,58,0.08) 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSweep 1.5s ease-in-out infinite;
+}
+@keyframes shimmerSweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════════
+   CLEAR CART BUTTON
+═══════════════════════════════════════════ */
+.clear-cart-btn {
+  background: none; border: none;
+  font-family: var(--ff-body);
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s ease;
+}
+.clear-cart-btn:hover {
+  background: rgba(239,68,68,0.12);
+}
+
+/* ═══════════════════════════════════════════
+   THEME TOGGLE
+═══════════════════════════════════════════ */
+.theme-toggle {
+  position: absolute; right: 18px;
+  width: 36px; height: 36px;
+  border-radius: var(--radius-full);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--divider);
+  color: var(--cream-muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+.theme-toggle:hover {
+  transform: rotate(20deg);
+}
+
+/* ═══════════════════════════════════════════
    RESPONSIVE
 ═══════════════════════════════════════════ */
 @media (max-width: 640px) {
@@ -692,14 +1001,23 @@ body {
 
 <!-- SPLASH -->
 <div id="splash">
-  <img src="/static/logo.png" class="splash-logo" alt="logo" onerror="this.style.display='none'">
+  <img src="{% if logo %}/static/uploads/{{logo}}{% else %}/static/logo.png{% endif %}" class="splash-logo" alt="logo" onerror="this.style.display='none'">
   <div class="splash-name">{{username}}</div>
   <div class="splash-rule"></div>
 </div>
 
 <!-- NAV -->
 <nav class="nav">
-  <span class="nav-title">{{username}}</span>
+  {% if logo %}
+  <img src="/static/uploads/{{logo}}" class="nav-logo" alt="logo" onerror="this.style.display='none'">
+  {% endif %}
+  <div class="nav-text">
+    <div class="nav-title">{{username}}</div>
+    {% if slogan %}
+    <div class="nav-slogan">{{slogan}}</div>
+    {% endif %}
+  </div>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
 </nav>
 
 <!-- TABLE STRIP -->
@@ -744,13 +1062,14 @@ body {
   <div class="menu-card" data-cat="{{cat}}" data-name="{{ item | lower }}"
     style="animation-delay:{{ loop.index0 * 0.045 }}s">
 
-    <div class="card-img-wrap">
+    <div class="card-img-wrap shimmer">
       {% if img %}
       <img class="card-img" src="{{ url_for('static', filename='uploads/' + img) }}"
-        alt="{{item}}" loading="lazy">
+        alt="{{item}}" loading="lazy" onload="this.parentElement.classList.remove('shimmer')" onerror="this.parentElement.classList.remove('shimmer')">
       {% else %}
       <img class="card-img" src="/static/uploads/defult-food.jpg" alt="{{item}}" loading="lazy"
-        onerror="this.parentElement.innerHTML='<div class=\'card-img-placeholder\'>🍽</div>'">
+        onload="this.parentElement.classList.remove('shimmer')"
+        onerror="this.parentElement.classList.remove('shimmer');this.parentElement.innerHTML='<div class=\'card-img-placeholder\'>🍽</div>'">
       {% endif %}
     </div>
 
@@ -763,9 +1082,11 @@ body {
         <div class="card-price">₹{{price}}</div>
       </div>
 
-      <button class="add-btn" onclick="addToCart(this)">
-        <span class="btn-text">Add to Cart</span>
-      </button>
+      <div class="add-btn-wrap" data-item-name="{{item}}">
+        <button class="add-btn" onclick="addToCart(this)">
+          <span class="btn-text">Add to Cart</span>
+        </button>
+      </div>
 
       <input type="hidden" class="item-name" value="{{item}}">
       <input type="hidden" class="item-price" value="{{price}}">
@@ -791,7 +1112,10 @@ body {
   <div class="drawer-handle"></div>
   <div class="drawer-header">
     <span class="drawer-title">Your Order</span>
-    <button class="drawer-close" onclick="closeCart()">✕</button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="clear-cart-btn" id="clearCartBtn" onclick="clearCart()" style="display:none">Clear All</button>
+      <button class="drawer-close" onclick="closeCart()">✕</button>
+    </div>
   </div>
   <div class="drawer-body" id="cartBody"></div>
   <div class="drawer-footer">
@@ -799,9 +1123,14 @@ body {
       <span class="total-label">Total</span>
       <span class="total-amount">₹<span id="totalVal">0</span></span>
     </div>
-    <button class="order-btn" onclick="placeOrder()">
-      <span>💬</span><span>Order via WhatsApp</span>
-    </button>
+    <div style="display:flex;gap:8px">
+      <button class="order-btn" style="flex:1" onclick="placeOrderApp()">
+        <span>🍽</span><span>Place Order</span>
+      </button>
+      <button class="order-btn wa-btn" style="flex:1" onclick="placeOrderWhatsApp()">
+        <span>💬</span><span>WhatsApp</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -823,10 +1152,58 @@ body {
   </div>
 </div>
 
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
 <script>
+// ── CONSTANTS ─────────────────────────────────────
+const CART_KEY = 'qr_cart_{{username}}';
+const THEME_KEY = 'qr_theme_{{username}}';
+
 // ── STATE ─────────────────────────────────────────
-let cart = [];
+let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
 let selectedTable = '';
+
+// ── THEME ─────────────────────────────────────────
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('themeToggle').textContent = '☀️';
+  }
+}
+function toggleTheme() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const btn = document.getElementById('themeToggle');
+  if (isLight) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem(THEME_KEY, 'dark');
+    btn.textContent = '🌙';
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem(THEME_KEY, 'light');
+    btn.textContent = '☀️';
+  }
+}
+initTheme();
+
+// ── TOAST ─────────────────────────────────────────
+function showToast(itemName) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast-snack';
+  toast.innerHTML = `<span class="toast-icon">✓</span> ${itemName} added`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('toast-out');
+    setTimeout(() => toast.remove(), 250);
+  }, 2000);
+}
+
+// ── SAVE CART ─────────────────────────────────────
+function saveCart() {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+}
 
 // ── SPLASH ────────────────────────────────────────
 window.addEventListener('load', () => {
@@ -874,35 +1251,80 @@ function addToCart(btn) {
   const found = cart.find(i => i.name === name);
   if (found) found.qty++; else cart.push({ name, price, qty: 1 });
 
-  const span = btn.querySelector('.btn-text');
-  btn.classList.add('added');
-  span.textContent = '✓ Added';
-  setTimeout(() => { btn.classList.remove('added'); span.textContent = 'Add to Cart'; }, 950);
-
   const fab = document.getElementById('cartFab');
   fab.classList.remove('bounce');
   void fab.offsetWidth;
   fab.classList.add('bounce');
 
+  showToast(name);
+  saveCart();
   renderCart();
+  updateCardButtons();
+}
+
+function cardChangeQty(name, delta) {
+  if (navigator.vibrate) navigator.vibrate(25);
+  const found = cart.find(i => i.name === name);
+  if (!found) return;
+  found.qty += delta;
+  if (found.qty <= 0) {
+    cart.splice(cart.indexOf(found), 1);
+  }
+  saveCart();
+  renderCart();
+  updateCardButtons();
 }
 
 function changeQty(i, d) {
   if (navigator.vibrate) navigator.vibrate(25);
   cart[i].qty += d;
   if (cart[i].qty <= 0) cart.splice(i, 1);
+  saveCart();
   renderCart();
+  updateCardButtons();
+}
+
+function clearCart() {
+  if (navigator.vibrate) navigator.vibrate(30);
+  cart = [];
+  saveCart();
+  renderCart();
+  updateCardButtons();
+}
+
+function updateCardButtons() {
+  document.querySelectorAll('.add-btn-wrap').forEach(wrap => {
+    const name = wrap.dataset.itemName;
+    const item = cart.find(i => i.name === name);
+    if (item && item.qty > 0) {
+      wrap.innerHTML = `<div class="card-qty-row">
+        <button class="cq-btn" onclick="cardChangeQty('${name.replace(/'/g, "\\'")}', -1)">−</button>
+        <div style="text-align:center">
+          <div class="cq-val">${item.qty}</div>
+          <div class="cq-label">in cart</div>
+        </div>
+        <button class="cq-btn" onclick="cardChangeQty('${name.replace(/'/g, "\\'")}', 1)">+</button>
+      </div>`;
+    } else {
+      wrap.innerHTML = `<button class="add-btn" onclick="addToCart(this)">
+        <span class="btn-text">Add to Cart</span>
+      </button>`;
+    }
+  });
 }
 
 function renderCart() {
   const body  = document.getElementById('cartBody');
   const badge = document.getElementById('cartBadge');
   const total = document.getElementById('totalVal');
+  const clearBtn = document.getElementById('clearCartBtn');
   let sum = 0, count = 0;
 
   if (!cart.length) {
     body.innerHTML = `<div class="cart-empty"><div class="empty-icon">🍽</div><p>Your cart is empty</p></div>`;
+    clearBtn.style.display = 'none';
   } else {
+    clearBtn.style.display = 'block';
     body.innerHTML = cart.map((item, i) => {
       sum   += item.price * item.qty;
       count += item.qty;
@@ -937,6 +1359,48 @@ function closeCart() {
   document.body.style.overflow = '';
 }
 
+// ── SWIPE TO DISMISS CART ─────────────────────────
+(function() {
+  const drawer = document.getElementById('cartDrawer');
+  let startY = 0, currentY = 0, dragging = false;
+
+  drawer.addEventListener('touchstart', function(e) {
+    const target = e.target;
+    const body = document.getElementById('cartBody');
+    if (target.closest('.drawer-handle') || body.scrollTop === 0) {
+      startY = e.touches[0].clientY;
+      dragging = true;
+      drawer.style.transition = 'none';
+    }
+  }, { passive: true });
+
+  drawer.addEventListener('touchmove', function(e) {
+    if (!dragging) return;
+    currentY = e.touches[0].clientY;
+    const deltaY = currentY - startY;
+    if (deltaY > 0) {
+      drawer.style.transform = `translateY(${deltaY}px)`;
+    }
+  }, { passive: true });
+
+  drawer.addEventListener('touchend', function() {
+    if (!dragging) return;
+    dragging = false;
+    drawer.style.transition = '';
+    const deltaY = currentY - startY;
+    if (deltaY > 100) {
+      closeCart();
+    } else {
+      drawer.style.transform = '';
+      if (drawer.classList.contains('open')) {
+        drawer.style.transform = 'translateY(0)';
+      }
+    }
+    startY = 0;
+    currentY = 0;
+  }, { passive: true });
+})();
+
 // ── TABLE ─────────────────────────────────────────
 function openTableModal() {
   document.getElementById('modalBg').classList.add('open');
@@ -961,12 +1425,70 @@ function selectTable(val, btn) {
 }
 
 // ── ORDER ─────────────────────────────────────────
-function placeOrder() {
+async function placeOrderApp() {
+  if (!cart.length) { alert('Your cart is empty!'); return; }
+  if (!selectedTable) { closeCart(); openTableModal(); return; }
+  const sum = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+  try {
+    const res = await fetch('/api/order', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        username: '{{username}}',
+        table: selectedTable,
+        items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty }))
+      })
+    });
+    if (res.ok) {
+      showToast('Order placed! Table ' + selectedTable + ' — ₹' + sum);
+      cart = [];
+      saveCart();
+      renderCart();
+      updateCardButtons();
+    } else {
+      alert('Order failed. Try again.');
+    }
+  } catch(e) {
+    alert('Network error. Check connection.');
+  }
+}
+
+async function placeOrderWhatsApp() {
   if (!cart.length) { alert('Your cart is empty!'); return; }
   if (!selectedTable) { closeCart(); openTableModal(); return; }
   const lines = cart.map(i => `▪ ${i.name} ×${i.qty}  (₹${i.price * i.qty})`).join('%0A');
   const sum   = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+  // Save to DB too
+  try {
+    await fetch('/api/order', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        username: '{{username}}',
+        table: selectedTable,
+        items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty }))
+      })
+    });
+  } catch(e) { console.warn('Order log failed:', e); }
+
   window.open(`https://wa.me/{{whatsapp}}?text=🍽 *New Order* | Table ${selectedTable}%0A%0A${lines}%0A%0A*Total: ₹${sum}*`, '_blank');
+
+  cart = [];
+  saveCart();
+  renderCart();
+  updateCardButtons();
+}
+
+// ── INIT CARD BUTTONS ON LOAD ───────────────────
+updateCardButtons();
+</script>
+<script>
+// ── SERVICE WORKER ─────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js')
+    .catch(() => {});
 }
 </script>
 </body>
