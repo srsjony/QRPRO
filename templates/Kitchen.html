@@ -1,540 +1,882 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kitchen — {{username}}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg:         #080807;
-  --surface:    #0f0e0c;
-  --card:       #141210;
-  --border:     rgba(255,255,255,0.07);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kitchen — {{username}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080807;
+      --surface: #0f0e0c;
+      --card: #141210;
+      --border: rgba(255, 255, 255, 0.07);
 
-  --pending:    #f59e0b;
-  --pending-bg: rgba(245,158,11,0.1);
-  --pending-bd: rgba(245,158,11,0.25);
+      --pending: #f59e0b;
+      --pending-bg: rgba(245, 158, 11, 0.1);
+      --pending-bd: rgba(245, 158, 11, 0.25);
 
-  --prep:       #3b82f6;
-  --prep-bg:    rgba(59,130,246,0.1);
-  --prep-bd:    rgba(59,130,246,0.25);
+      --prep: #3b82f6;
+      --prep-bg: rgba(59, 130, 246, 0.1);
+      --prep-bd: rgba(59, 130, 246, 0.25);
 
-  --done:       #22c55e;
-  --done-bg:    rgba(34,197,94,0.1);
-  --done-bd:    rgba(34,197,94,0.25);
+      --done: #22c55e;
+      --done-bg: rgba(34, 197, 94, 0.1);
+      --done-bd: rgba(34, 197, 94, 0.25);
 
-  --ember:      #c8873a;
-  --cream:      #f2e8d9;
-  --muted:      #6b6458;
+      --ember: #c8873a;
+      --cream: #f2e8d9;
+      --muted: #6b6458;
 
-  --ff-display: 'Cormorant Garamond', serif;
-  --ff-body:    'DM Sans', system-ui, sans-serif;
-  --ff-mono:    'DM Mono', monospace;
-  --ease:       cubic-bezier(0.16, 1, 0.3, 1);
-}
+      --ff-display: 'Cormorant Garamond', serif;
+      --ff-body: 'DM Sans', system-ui, sans-serif;
+      --ff-mono: 'DM Mono', monospace;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-body {
-  font-family: var(--ff-body);
-  background: var(--bg);
-  color: var(--cream);
-  min-height: 100svh;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
+    html {
+      height: 100%;
+    }
 
-/* ── HEADER ──────────────────────────────── */
-.header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(8,8,7,0.95);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px;
-  height: 60px;
-  display: flex; align-items: center;
-  justify-content: space-between; gap: 16px;
-}
-.header-left { display: flex; align-items: center; gap: 14px; }
-.header-title {
-  font-family: var(--ff-display);
-  font-size: 22px; font-weight: 700;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--ember);
-}
-.header-sub { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-.pulse-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--done);
-  box-shadow: 0 0 8px var(--done);
-  animation: pulse 2s ease infinite;
-}
-.pulse-dot.offline { background: #ef4444; box-shadow: 0 0 8px #ef4444; animation: none; }
-@keyframes pulse {
-  0%,100% { opacity:1; transform:scale(1); }
-  50%      { opacity:0.6; transform:scale(1.3); }
-}
+    body {
+      font-family: var(--ff-body);
+      background: var(--bg);
+      color: var(--cream);
+      min-height: 100svh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
 
-.header-right { display: flex; align-items: center; gap: 10px; }
-.clock {
-  font-family: var(--ff-mono);
-  font-size: 16px; font-weight: 500;
-  color: var(--cream); letter-spacing: 0.04em;
-}
-.filter-btn {
-  font-size: 12px; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  padding: 7px 14px; border-radius: 999px;
-  border: 1px solid var(--border);
-  background: transparent; color: var(--muted);
-  cursor: pointer; transition: all 0.2s ease;
-}
-.filter-btn.active { border-color: var(--ember); color: var(--ember); background: rgba(200,135,58,0.08); }
-.filter-btn:hover { border-color: var(--ember); color: var(--ember); }
+    /* ── HEADER ──────────────────────────────── */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(8, 8, 7, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
 
-/* ── STATS BAR ───────────────────────────── */
-.stats-bar {
-  display: flex; align-items: center; gap: 0;
-  padding: 0 24px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto; scrollbar-width: none;
-}
-.stats-bar::-webkit-scrollbar { display: none; }
-.stat {
-  flex-shrink: 0;
-  padding: 12px 24px;
-  border-right: 1px solid var(--border);
-  display: flex; align-items: center; gap: 10px;
-}
-.stat:last-child { border-right: none; }
-.stat-num {
-  font-family: var(--ff-display);
-  font-size: 28px; font-weight: 700; line-height: 1;
-}
-.stat-info { display: flex; flex-direction: column; gap: 2px; }
-.stat-name {
-  font-size: 11px; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase;
-}
-.stat.pending .stat-num, .stat.pending .stat-name { color: var(--pending); }
-.stat.prep    .stat-num, .stat.prep    .stat-name { color: var(--prep); }
-.stat.done    .stat-num, .stat.done    .stat-name { color: var(--done); }
-.stat.total   .stat-num { color: var(--cream); }
-.stat.total   .stat-name { color: var(--muted); }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
 
-/* ── MAIN GRID ───────────────────────────── */
-.main { padding: 20px 24px 60px; }
-.main-title {
-  font-size: 12px; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 16px;
-}
+    .header-title {
+      font-family: var(--ff-display);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ember);
+    }
 
-.orders-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-}
+    .header-sub {
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-/* ── ORDER CARD ──────────────────────────── */
-.order-card {
-  background: var(--card);
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  animation: cardIn 0.5s var(--ease) both;
-  transition: transform 0.25s var(--ease), box-shadow 0.25s ease;
-  position: relative;
-}
-.order-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.5); }
-@keyframes cardIn {
-  from { opacity:0; transform:translateY(20px) scale(0.97); }
-  to   { opacity:1; transform:translateY(0) scale(1); }
-}
-.order-card.status-pending { border-color: var(--pending-bd); }
-.order-card.status-preparing { border-color: var(--prep-bd); }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--done);
+      box-shadow: 0 0 8px var(--done);
+      animation: pulse 2s ease infinite;
+    }
 
-/* Left status bar */
-.order-card::before {
-  content: ''; position: absolute;
-  left: 0; top: 0; bottom: 0; width: 3px;
-  border-radius: 16px 0 0 16px;
-}
-.order-card.status-pending::before  { background: var(--pending); }
-.order-card.status-preparing::before { background: var(--prep); }
+    .pulse-dot.offline {
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+      animation: none;
+    }
 
-/* Card header */
-.card-top {
-  display: flex; align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px 12px 20px;
-  border-bottom: 1px solid var(--border);
-}
-.table-badge {
-  font-family: var(--ff-display);
-  font-size: 26px; font-weight: 700;
-  color: var(--cream);
-}
-.table-badge span {
-  font-size: 12px; font-weight: 500;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--muted); display: block; line-height: 1.2;
-}
-.card-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.status-pill {
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  padding: 4px 10px; border-radius: 999px;
-}
-.status-pill.pending  { background: var(--pending-bg); color: var(--pending); border: 1px solid var(--pending-bd); }
-.status-pill.preparing { background: var(--prep-bg);    color: var(--prep);    border: 1px solid var(--prep-bd); }
-.elapsed {
-  font-family: var(--ff-mono);
-  font-size: 12px; color: var(--muted);
-  letter-spacing: 0.04em;
-}
-.elapsed.urgent { color: #ef4444; }
+    @keyframes pulse {
 
-/* Items list */
-.card-items { padding: 12px 16px 12px 20px; }
-.order-item {
-  display: flex; align-items: center;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  font-size: 14px;
-}
-.order-item:last-child { border-bottom: none; }
-.item-name { color: var(--cream); font-weight: 400; }
-.item-qty {
-  font-weight: 700; font-size: 15px;
-  color: var(--ember); background: rgba(200,135,58,0.12);
-  width: 26px; height: 26px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
 
-/* Card footer */
-.card-footer {
-  padding: 12px 16px 14px 20px;
-  border-top: 1px solid var(--border);
-  display: flex; align-items: center;
-  justify-content: space-between; gap: 10px;
-}
-.order-total {
-  font-family: var(--ff-display);
-  font-size: 20px; font-weight: 700;
-  color: var(--ember);
-}
-.action-row { display: flex; gap: 8px; }
-.action-btn {
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 8px 14px; border-radius: 8px;
-  border: none; cursor: pointer;
-  transition: all 0.2s ease;
-}
-.action-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
-.action-btn:active { transform: scale(0.96); }
-.btn-preparing {
-  background: var(--prep-bg);
-  color: var(--prep); border: 1px solid var(--prep-bd);
-}
-.btn-done {
-  background: var(--done-bg);
-  color: var(--done); border: 1px solid var(--done-bd);
-}
-.btn-undo {
-  background: rgba(255,255,255,0.05);
-  color: var(--muted); border: 1px solid var(--border);
-  font-size: 10px;
-}
+      50% {
+        opacity: 0.6;
+        transform: scale(1.3);
+      }
+    }
 
-/* ── NEW ORDER FLASH ─────────────────────── */
-@keyframes newOrderFlash {
-  0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
-  50%      { box-shadow: 0 0 0 8px rgba(245,158,11,0.2); }
-}
-.order-card.new-flash {
-  animation: cardIn 0.5s var(--ease) both,
-             newOrderFlash 1.2s ease 0.5s 3;
-}
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-/* ── EMPTY STATE ─────────────────────────── */
-.empty-kds {
-  grid-column: 1 / -1;
-  text-align: center; padding: 80px 20px;
-}
-.empty-kds .e-icon { font-size: 64px; opacity: 0.15; margin-bottom: 20px; }
-.empty-kds h3 {
-  font-family: var(--ff-display);
-  font-size: 28px; font-style: italic; font-weight: 600;
-  color: rgba(242,232,217,0.3);
-}
-.empty-kds p { font-size: 14px; color: var(--muted); margin-top: 8px; }
+    .clock {
+      font-family: var(--ff-mono);
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--cream);
+      letter-spacing: 0.04em;
+    }
 
-/* ── TOAST ───────────────────────────────── */
-.toast-wrap {
-  position: fixed; top: 80px; right: 24px; z-index: 999;
-  display: flex; flex-direction: column; gap: 10px;
-  pointer-events: none;
-}
-.toast {
-  background: var(--card);
-  border: 1px solid var(--pending-bd);
-  border-left: 3px solid var(--pending);
-  border-radius: 10px;
-  padding: 12px 16px;
-  font-size: 13px; font-weight: 500;
-  color: var(--cream);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  animation: toastIn 0.4s var(--ease) both;
-  max-width: 280px;
-  pointer-events: auto;
-}
-.toast strong { color: var(--pending); display: block; font-size: 14px; margin-bottom: 2px; }
-@keyframes toastIn {
-  from { opacity:0; transform:translateX(20px); }
-  to   { opacity:1; transform:translateX(0); }
-}
-@keyframes toastOut {
-  to { opacity:0; transform:translateX(20px); }
-}
+    .filter-btn {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
 
-/* ── RESPONSIVE ──────────────────────────── */
-@media (max-width: 640px) {
-  .header { padding: 0 14px; }
-  .header-title { font-size: 18px; }
-  .stats-bar { padding: 0 14px; }
-  .stat { padding: 10px 16px; }
-  .main { padding: 14px 14px 60px; }
-  .orders-grid { grid-template-columns: 1fr; }
-  .clock { display: none; }
-}
-</style>
+    .filter-btn.active {
+      border-color: var(--ember);
+      color: var(--ember);
+      background: rgba(200, 135, 58, 0.08);
+    }
+
+    .filter-btn:hover {
+      border-color: var(--ember);
+      color: var(--ember);
+    }
+
+    /* ── STATS BAR ───────────────────────────── */
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .stats-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .stat {
+      flex-shrink: 0;
+      padding: 12px 24px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stat:last-child {
+      border-right: none;
+    }
+
+    .stat-num {
+      font-family: var(--ff-display);
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-name {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .stat.pending .stat-num,
+    .stat.pending .stat-name {
+      color: var(--pending);
+    }
+
+    .stat.prep .stat-num,
+    .stat.prep .stat-name {
+      color: var(--prep);
+    }
+
+    .stat.done .stat-num,
+    .stat.done .stat-name {
+      color: var(--done);
+    }
+
+    .stat.total .stat-num {
+      color: var(--cream);
+    }
+
+    .stat.total .stat-name {
+      color: var(--muted);
+    }
+
+    /* ── MAIN GRID ───────────────────────────── */
+    .main {
+      padding: 20px 24px 60px;
+    }
+
+    .main-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .orders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── ORDER CARD ──────────────────────────── */
+    .order-card {
+      background: var(--card);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      animation: cardIn 0.5s var(--ease) both;
+      transition: transform 0.25s var(--ease), box-shadow 0.25s ease;
+      position: relative;
+    }
+
+    .order-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    @keyframes cardIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.97);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .order-card.status-pending {
+      border-color: var(--pending-bd);
+    }
+
+    .order-card.status-preparing {
+      border-color: var(--prep-bd);
+    }
+
+    /* Left status bar */
+    .order-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      border-radius: 16px 0 0 16px;
+    }
+
+    .order-card.status-pending::before {
+      background: var(--pending);
+    }
+
+    .order-card.status-preparing::before {
+      background: var(--prep);
+    }
+
+    /* Card header */
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 12px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-badge {
+      font-family: var(--ff-display);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--cream);
+    }
+
+    .table-badge span {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: block;
+      line-height: 1.2;
+    }
+
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .status-pill {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .status-pill.pending {
+      background: var(--pending-bg);
+      color: var(--pending);
+      border: 1px solid var(--pending-bd);
+    }
+
+    .status-pill.preparing {
+      background: var(--prep-bg);
+      color: var(--prep);
+      border: 1px solid var(--prep-bd);
+    }
+
+    .elapsed {
+      font-family: var(--ff-mono);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .elapsed.urgent {
+      color: #ef4444;
+    }
+
+    /* Items list */
+    .card-items {
+      padding: 12px 16px 12px 20px;
+    }
+
+    .order-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 14px;
+    }
+
+    .order-item:last-child {
+      border-bottom: none;
+    }
+
+    .item-name {
+      color: var(--cream);
+      font-weight: 400;
+    }
+
+    .item-qty {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--ember);
+      background: rgba(200, 135, 58, 0.12);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .order-notes {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: rgba(245, 158, 11, 0.1);
+      border-left: 3px solid #f59e0b;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #fbbf24;
+      font-style: italic;
+    }
+
+    /* Card footer */
+    .card-footer {
+      padding: 12px 16px 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .order-total {
+      font-family: var(--ff-display);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ember);
+    }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.1);
+    }
+
+    .action-btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-preparing {
+      background: var(--prep-bg);
+      color: var(--prep);
+      border: 1px solid var(--prep-bd);
+    }
+
+    .btn-done {
+      background: var(--done-bg);
+      color: var(--done);
+      border: 1px solid var(--done-bd);
+    }
+
+    .btn-undo {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      font-size: 10px;
+    }
+
+    /* ── NEW ORDER FLASH ─────────────────────── */
+    @keyframes newOrderFlash {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+      }
+
+      50% {
+        box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.2);
+      }
+    }
+
+    .order-card.new-flash {
+      animation: cardIn 0.5s var(--ease) both,
+        newOrderFlash 1.2s ease 0.5s 3;
+    }
+
+    /* ── EMPTY STATE ─────────────────────────── */
+    .empty-kds {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 80px 20px;
+    }
+
+    .empty-kds .e-icon {
+      font-size: 64px;
+      opacity: 0.15;
+      margin-bottom: 20px;
+    }
+
+    .empty-kds h3 {
+      font-family: var(--ff-display);
+      font-size: 28px;
+      font-style: italic;
+      font-weight: 600;
+      color: rgba(242, 232, 217, 0.3);
+    }
+
+    .empty-kds p {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* ── TOAST ───────────────────────────────── */
+    .toast-wrap {
+      position: fixed;
+      top: 80px;
+      right: 24px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--card);
+      border: 1px solid var(--pending-bd);
+      border-left: 3px solid var(--pending);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--cream);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      animation: toastIn 0.4s var(--ease) both;
+      max-width: 280px;
+      pointer-events: auto;
+    }
+
+    .toast strong {
+      color: var(--pending);
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .btn-sound {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(200, 135, 58, 0.1);
+      color: var(--ember);
+      border: 1px solid var(--divider);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-sound:hover {
+      background: rgba(200, 135, 58, 0.2);
+    }
+
+    .btn-sound.enabled {
+      background: rgba(52, 211, 153, 0.1);
+      color: #34d399;
+      border-color: rgba(52, 211, 153, 0.3);
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes toastOut {
+      to {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+    }
+
+    /* ── RESPONSIVE ──────────────────────────── */
+    @media (max-width: 640px) {
+      .header {
+        padding: 0 14px;
+      }
+
+      .header-title {
+        font-size: 18px;
+      }
+
+      .stats-bar {
+        padding: 0 14px;
+      }
+
+      .stat {
+        padding: 10px 16px;
+      }
+
+      .main {
+        padding: 14px 14px 60px;
+      }
+
+      .orders-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .clock {
+        display: none;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- HEADER -->
-<header class="header">
-  <div class="header-left">
-    <div>
-      <div class="header-title">🍳 Kitchen — {{username}}</div>
-      <div class="header-sub">
-        <div class="pulse-dot" id="connDot"></div>
-        <span id="connLabel">Connecting…</span>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div>
+        <div class="header-title">🍳 Kitchen — {{username}}</div>
+        <div class="header-sub">
+          <div class="pulse-dot" id="connDot"></div>
+          <span id="connLabel">Connecting…</span>
+        </div>
       </div>
     </div>
+    <div class="header-right">
+      <button id="btnSound" class="btn-sound" onclick="initAudio()">🔇 Enable Sound</button>
+      <button class="filter-btn active" data-filter="active" onclick="setFilter('active',this)">Active</button>
+      <button class="filter-btn" data-filter="all" onclick="setFilter('all',this)">All</button>
+      <div class="clock" id="clock">00:00:00</div>
+    </div>
+  </header>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat pending">
+      <div class="stat-num" id="statPending">0</div>
+      <div class="stat-info"><span class="stat-name">Pending</span></div>
+    </div>
+    <div class="stat prep">
+      <div class="stat-num" id="statPrep">0</div>
+      <div class="stat-info"><span class="stat-name">Preparing</span></div>
+    </div>
+    <div class="stat done">
+      <div class="stat-num" id="statDone">0</div>
+      <div class="stat-info"><span class="stat-name">Done</span></div>
+    </div>
+    <div class="stat total">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-info"><span class="stat-name">Total Today</span></div>
+    </div>
   </div>
-  <div class="header-right">
-    <button class="filter-btn active" data-filter="active" onclick="setFilter('active',this)">Active</button>
-    <button class="filter-btn" data-filter="all"    onclick="setFilter('all',this)">All</button>
-    <div class="clock" id="clock">00:00:00</div>
-  </div>
-</header>
 
-<!-- STATS BAR -->
-<div class="stats-bar">
-  <div class="stat pending">
-    <div class="stat-num" id="statPending">0</div>
-    <div class="stat-info"><span class="stat-name">Pending</span></div>
-  </div>
-  <div class="stat prep">
-    <div class="stat-num" id="statPrep">0</div>
-    <div class="stat-info"><span class="stat-name">Preparing</span></div>
-  </div>
-  <div class="stat done">
-    <div class="stat-num" id="statDone">0</div>
-    <div class="stat-info"><span class="stat-name">Done</span></div>
-  </div>
-  <div class="stat total">
-    <div class="stat-num" id="statTotal">0</div>
-    <div class="stat-info"><span class="stat-name">Total Today</span></div>
-  </div>
-</div>
+  <!-- ORDERS -->
+  <main class="main">
+    <div class="main-title" id="gridTitle">Loading orders…</div>
+    <div class="orders-grid" id="ordersGrid"></div>
+  </main>
 
-<!-- ORDERS -->
-<main class="main">
-  <div class="main-title" id="gridTitle">Loading orders…</div>
-  <div class="orders-grid" id="ordersGrid"></div>
-</main>
+  <!-- TOAST NOTIFICATIONS -->
+  <div class="toast-wrap" id="toastWrap"></div>
 
-<!-- TOAST NOTIFICATIONS -->
-<div class="toast-wrap" id="toastWrap"></div>
+  <!-- NOTIFICATION AUDIO (silent oscillator — no external file needed) -->
+  <script>
+    const RESTAURANT = '{{username}}';
+    let orders = {};
+    let knownIds = new Set();
+    let currentFilter = 'active';
+    let doneCount = 0;
+    let totalCount = 0;
 
-<!-- NOTIFICATION AUDIO (silent oscillator — no external file needed) -->
-<script>
-const RESTAURANT = '{{username}}';
-let orders        = {};
-let knownIds      = new Set();
-let currentFilter = 'active';
-let doneCount     = 0;
-let totalCount    = 0;
-
-// ── CLOCK ─────────────────────────────────
-function tickClock() {
-  const now = new Date();
-  document.getElementById('clock').textContent =
-    now.toTimeString().slice(0, 8);
-}
-tickClock();
-setInterval(tickClock, 1000);
-
-// ── AUDIO PING ────────────────────────────
-function ping() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.4, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    osc.start(); osc.stop(ctx.currentTime + 0.4);
-  } catch(e) {}
-}
-
-// ── TOAST ─────────────────────────────────
-function showToast(table, itemCount) {
-  const wrap = document.getElementById('toastWrap');
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.innerHTML = `<strong>🔔 New Order — Table ${table}</strong>${itemCount} item${itemCount !== 1 ? 's' : ''}`;
-  wrap.appendChild(el);
-  setTimeout(() => {
-    el.style.animation = 'toastOut 0.3s ease forwards';
-    setTimeout(() => el.remove(), 300);
-  }, 3500);
-}
-
-// ── TIME ELAPSED ──────────────────────────
-function elapsed(created_at) {
-  const created = new Date(created_at.replace(' ','T') + 'Z');
-  const diff    = Math.floor((Date.now() - created.getTime()) / 1000);
-  if (diff < 60)  return `${diff}s`;
-  if (diff < 3600) return `${Math.floor(diff/60)}m ${diff%60}s`;
-  return `${Math.floor(diff/3600)}h ${Math.floor((diff%3600)/60)}m`;
-}
-
-function isUrgent(created_at) {
-  const created = new Date(created_at.replace(' ','T') + 'Z');
-  return (Date.now() - created.getTime()) > 10 * 60 * 1000; // >10 min
-}
-
-// ── FILTER ────────────────────────────────
-function setFilter(f, btn) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderOrders();
-}
-
-// ── STATUS ACTION ─────────────────────────
-async function setStatus(id, status) {
-  // Instantly remove visually if cancelled to avoid waiting for fetchOrders loop
-  if (status === 'cancelled') {
-    const card = document.querySelector(`[data-id="${id}"]`);
-    if (card) {
-      card.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-      card.style.opacity = '0'; card.style.transform = 'scale(0.95)';
-      setTimeout(() => card.remove(), 200);
+    // ── CLOCK ─────────────────────────────────
+    function tickClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toTimeString().slice(0, 8);
     }
-  }
+    tickClock();
+    setInterval(tickClock, 1000);
 
-  const r = await fetch(`/update_order/${id}`, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({status})
-  });
-  if (r.ok) {
-    if (status === 'done') { doneCount++; totalCount++; }
-    fetchOrders();
-  } else {
-    // If failed to cancel, reload orders to bring it back
-    fetchOrders();
-  }
-}
+    let audioCtx = null;
+    let soundEnabled = false;
 
-// ── RENDER ────────────────────────────────
-function renderOrders() {
-  const grid = document.getElementById('ordersGrid');
-  const title = document.getElementById('gridTitle');
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      soundEnabled = true;
+      const btn = document.getElementById('btnSound');
+      btn.textContent = '🔊 Sound On';
+      btn.classList.add('enabled');
+      // Play a test ping to confirm
+      ping();
+    }
 
-  const list = Object.values(orders).filter(o => {
-    if (o.status === 'cancelled') return false;
-    if (currentFilter === 'active') return o.status !== 'done';
-    return true;
-  });
+    // ── AUDIO PING ────────────────────────────
+    function ping() {
+      if (!soundEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitch A5
+        osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1); // Drop to A4
+        osc.type = 'sine';
 
-  // Stats
-  const pending  = Object.values(orders).filter(o => o.status === 'pending').length;
-  const preparing = Object.values(orders).filter(o => o.status === 'preparing').length;
-  document.getElementById('statPending').textContent  = pending;
-  document.getElementById('statPrep').textContent     = preparing;
-  document.getElementById('statDone').textContent     = doneCount;
-  document.getElementById('statTotal').textContent    = totalCount + doneCount;
+        gain.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05); // quick fade in
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5); // long fade out
 
-  if (list.length === 0) {
-    const msg = currentFilter === 'active'
-      ? 'All clear — no active orders' : 'No orders yet today';
-    grid.innerHTML = `<div class="empty-kds">
+        osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+      } catch (e) { }
+    }
+
+    // ── TOAST ─────────────────────────────────
+    function showToast(table, itemCount) {
+      const wrap = document.getElementById('toastWrap');
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.innerHTML = `<strong>🔔 New Order — Table ${table}</strong>${itemCount} item${itemCount !== 1 ? 's' : ''}`;
+      wrap.appendChild(el);
+      setTimeout(() => {
+        el.style.animation = 'toastOut 0.3s ease forwards';
+        setTimeout(() => el.remove(), 300);
+      }, 3500);
+    }
+
+    // ── TIME ELAPSED ──────────────────────────
+    function elapsed(created_at) {
+      const created = new Date(created_at.replace(' ', 'T') + 'Z');
+      const diff = Math.floor((Date.now() - created.getTime()) / 1000);
+      if (diff < 60) return `${diff}s`;
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ${diff % 60}s`;
+      return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m`;
+    }
+
+    function isUrgent(created_at) {
+      const created = new Date(created_at.replace(' ', 'T') + 'Z');
+      return (Date.now() - created.getTime()) > 10 * 60 * 1000; // >10 min
+    }
+
+    // ── FILTER ────────────────────────────────
+    function setFilter(f, btn) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderOrders();
+    }
+
+    // ── STATUS ACTION ─────────────────────────
+    async function setStatus(id, status) {
+      // Instantly remove visually if cancelled to avoid waiting for fetchOrders loop
+      if (status === 'cancelled') {
+        const card = document.querySelector(`[data-id="${id}"]`);
+        if (card) {
+          card.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+          card.style.opacity = '0'; card.style.transform = 'scale(0.95)';
+          setTimeout(() => card.remove(), 200);
+        }
+      }
+
+      const r = await fetch(`/update_order/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (r.ok) {
+        if (status === 'done') { doneCount++; totalCount++; }
+        fetchOrders();
+      } else {
+        // If failed to cancel, reload orders to bring it back
+        fetchOrders();
+      }
+    }
+
+    // ── RENDER ────────────────────────────────
+    function renderOrders() {
+      const grid = document.getElementById('ordersGrid');
+      const title = document.getElementById('gridTitle');
+
+      const list = Object.values(orders).filter(o => {
+        if (o.status === 'cancelled') return false;
+        if (currentFilter === 'active') return o.status !== 'done';
+        return true;
+      });
+
+      // Stats
+      const pending = Object.values(orders).filter(o => o.status === 'pending').length;
+      const preparing = Object.values(orders).filter(o => o.status === 'preparing').length;
+      document.getElementById('statPending').textContent = pending;
+      document.getElementById('statPrep').textContent = preparing;
+      document.getElementById('statDone').textContent = doneCount;
+      document.getElementById('statTotal').textContent = totalCount + doneCount;
+
+      if (list.length === 0) {
+        const msg = currentFilter === 'active'
+          ? 'All clear — no active orders' : 'No orders yet today';
+        grid.innerHTML = `<div class="empty-kds">
       <div class="e-icon">🍽</div>
       <h3>${msg}</h3>
       <p>New orders will appear here automatically</p>
     </div>`;
-    title.textContent = currentFilter === 'active' ? 'Active Orders' : 'All Orders';
-    return;
-  }
-
-  title.textContent = `${list.length} order${list.length !== 1 ? 's' : ''}`;
-
-  // Preserve existing cards, update timers, add/remove cards
-  const existing = new Set([...grid.querySelectorAll('.order-card')].map(c => c.dataset.id));
-  const incoming = new Set(list.map(o => String(o.id)));
-
-  // Remove cards no longer in list
-  existing.forEach(id => {
-    if (!incoming.has(id)) {
-      const card = grid.querySelector(`[data-id="${id}"]`);
-      if (card) {
-        card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        card.style.opacity = '0'; card.style.transform = 'scale(0.95)';
-        setTimeout(() => card.remove(), 300);
+        title.textContent = currentFilter === 'active' ? 'Active Orders' : 'All Orders';
+        return;
       }
-    }
-  });
 
-  // Add/update cards
-  list.forEach((order, i) => {
-    const id = String(order.id);
-    const urgent = isUrgent(order.created_at);
-    let card = grid.querySelector(`[data-id="${id}"]`);
+      title.textContent = `${list.length} order${list.length !== 1 ? 's' : ''}`;
 
-    if (!card) {
-      card = document.createElement('div');
-      card.dataset.id = id;
-      card.style.animationDelay = `${Math.min(i, 5) * 0.05}s`;
-      grid.appendChild(card);
-    }
+      // Preserve existing cards, update timers, add/remove cards
+      const existing = new Set([...grid.querySelectorAll('.order-card')].map(c => c.dataset.id));
+      const incoming = new Set(list.map(o => String(o.id)));
 
-    const isNew = !existing.has(id);
-    card.className = `order-card status-${order.status}${isNew ? ' new-flash' : ''}`;
+      // Remove cards no longer in list
+      existing.forEach(id => {
+        if (!incoming.has(id)) {
+          const card = grid.querySelector(`[data-id="${id}"]`);
+          if (card) {
+            card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            card.style.opacity = '0'; card.style.transform = 'scale(0.95)';
+            setTimeout(() => card.remove(), 300);
+          }
+        }
+      });
 
-    const actionBtns = order.status === 'pending'
-      ? `<button class="action-btn" onclick="if(confirm('Are you sure you want to cancel this order?')) setStatus(${order.id},'cancelled')" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">✕ Cancel</button>
+      // Add/update cards
+      list.forEach((order, i) => {
+        const id = String(order.id);
+        const urgent = isUrgent(order.created_at);
+        let card = grid.querySelector(`[data-id="${id}"]`);
+
+        if (!card) {
+          card = document.createElement('div');
+          card.dataset.id = id;
+          card.style.animationDelay = `${Math.min(i, 5) * 0.05}s`;
+          grid.appendChild(card);
+        }
+
+        const isNew = !existing.has(id);
+        card.className = `order-card status-${order.status}${isNew ? ' new-flash' : ''}`;
+
+        const actionBtns = order.status === 'pending'
+          ? `<button class="action-btn" onclick="if(confirm('Are you sure you want to cancel this order?')) setStatus(${order.id},'cancelled')" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">✕ Cancel</button>
          <button class="action-btn btn-preparing" onclick="setStatus(${order.id},'preparing')">🔥 Start</button>
          <button class="action-btn btn-done" onclick="setStatus(${order.id},'done')">✓ Done</button>`
-      : `<button class="action-btn btn-undo" onclick="setStatus(${order.id},'pending')">↩ Back</button>
+          : `<button class="action-btn btn-undo" onclick="setStatus(${order.id},'pending')">↩ Back</button>
          <button class="action-btn" onclick="if(confirm('Are you sure you want to cancel this order?')) setStatus(${order.id},'cancelled')" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">✕ Cancel</button>
          <button class="action-btn btn-done" onclick="setStatus(${order.id},'done')">✓ Done</button>`;
 
-    card.innerHTML = `
+        card.innerHTML = `
       <div class="card-top">
         <div class="table-badge">
           <span>Table</span>${order.table}
@@ -553,65 +895,69 @@ function renderOrders() {
             <span class="item-qty">×${item.qty}</span>
           </div>
         `).join('')}
+        ${order.notes ? `<div class="order-notes">💬 ${order.notes}</div>` : ''}
       </div>
       <div class="card-footer">
         <span class="order-total">₹${order.total}</span>
         <div class="action-row">${actionBtns}</div>
       </div>`;
-  });
-}
-
-// ── UPDATE TIMERS ─────────────────────────
-function updateTimers() {
-  Object.values(orders).forEach(order => {
-    const el = document.getElementById(`elapsed-${order.id}`);
-    if (el) {
-      const urgent = isUrgent(order.created_at);
-      el.className = `elapsed ${urgent ? 'urgent' : ''}`;
-      el.textContent = elapsed(order.created_at) + (urgent ? ' ⚠' : '');
+      });
     }
-  });
-}
 
-// ── FETCH LOOP ────────────────────────────
-async function fetchOrders() {
-  try {
-    const res  = await fetch(`/kitchen_orders/${RESTAURANT}`);
-    const data = await res.json();
-    const dot  = document.getElementById('connDot');
-    const lbl  = document.getElementById('connLabel');
-    dot.classList.remove('offline');
-    lbl.textContent = 'Live';
-
-    const newOrders = {};
-    let hasNew = false;
-
-    data.orders.forEach(order => {
-      newOrders[order.id] = order;
-      if (!knownIds.has(order.id)) {
-        hasNew = true;
-        knownIds.add(order.id);
-        if (knownIds.size > 1) { // don't alert on initial load
-          showToast(order.table, order.items.length);
-          ping();
+    // ── UPDATE TIMERS ─────────────────────────
+    function updateTimers() {
+      Object.values(orders).forEach(order => {
+        const el = document.getElementById(`elapsed-${order.id}`);
+        if (el) {
+          const urgent = isUrgent(order.created_at);
+          el.className = `elapsed ${urgent ? 'urgent' : ''}`;
+          el.textContent = elapsed(order.created_at) + (urgent ? ' ⚠' : '');
         }
+      });
+    }
+
+    // ── FETCH LOOP ────────────────────────────
+    async function fetchOrders() {
+      try {
+        const res = await fetch(`/kitchen_orders/${RESTAURANT}`);
+        const data = await res.json();
+        const dot = document.getElementById('connDot');
+        const lbl = document.getElementById('connLabel');
+        dot.classList.remove('offline');
+        lbl.textContent = 'Live';
+
+        const newOrders = {};
+        let hasNew = false;
+
+        data.orders.forEach(order => {
+          newOrders[order.id] = order;
+          if (!knownIds.has(order.id)) {
+            hasNew = true;
+            knownIds.add(order.id);
+            if (knownIds.size > 1) { // don't alert on initial load
+              showToast(order.table, order.items.length);
+              ping();
+            }
+          }
+        });
+
+        orders = newOrders;
+        renderOrders();
+      } catch (e) {
+        const dot = document.getElementById('connDot');
+        const lbl = document.getElementById('connLabel');
+        dot.classList.add('offline');
+        lbl.textContent = 'Reconnecting…';
       }
-    });
+    }
 
-    orders = newOrders;
-    renderOrders();
-  } catch(e) {
-    const dot = document.getElementById('connDot');
-    const lbl = document.getElementById('connLabel');
-    dot.classList.add('offline');
-    lbl.textContent = 'Reconnecting…';
-  }
-}
+    // ── INIT ──────────────────────────────────
+    fetchOrders();
+    setInterval(fetchOrders, 5000);   // poll every 5s
+    setInterval(updateTimers, 10000); // update timers every 10s
+  </script>
 
-// ── INIT ──────────────────────────────────
-fetchOrders();
-setInterval(fetchOrders, 5000);   // poll every 5s
-setInterval(updateTimers, 10000); // update timers every 10s
-</script>
+  {% include 'sr_footer.html' %}
 </body>
+
 </html>

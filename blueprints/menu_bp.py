@@ -105,7 +105,7 @@ def dashboard():
     table_numbers = normalize_table_numbers(user.table_numbers)
 
     # Convert to tuples for template compatibility
-    data_tuples = [(m.id, m.item, m.price, m.category, m.image) for m in data]
+    data_tuples = [(m.id, m.item, m.price, m.category, m.image, m.available) for m in data]
 
     # Order stats
     today = date.today()
@@ -193,6 +193,18 @@ def delete(id):
     return redirect('/dashboard')
 
 
+# ================= TOGGLE AVAILABILITY =================
+@menu_bp.route('/toggle_available/<int:id>', methods=['POST'])
+@login_required
+def toggle_available(id):
+    item = Menu.query.get_or_404(id)
+    if item.user_id != session['user_id']:
+        abort(403)
+    item.available = 0 if item.available else 1
+    db.session.commit()
+    return redirect('/dashboard')
+
+
 # ================= EDIT =================
 @menu_bp.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -230,7 +242,7 @@ def menu(username):
         if user.expiry < str(date.today()):
             return render_template("expired.html", whatsapp=user.whatsapp)
 
-    items = Menu.query.filter_by(user_id=user.id).all()
+    items = Menu.query.filter_by(user_id=user.id, available=1).all()
     data = [(m.item, m.price, m.category, m.image) for m in items]
 
     categories = db.session.query(Menu.category).filter_by(
@@ -255,6 +267,10 @@ def menu(username):
 
 
 # ================= CAPTAIN APP =================
+@menu_bp.route('/captain')
+def captain_login():
+    return render_template("captain_login.html")
+
 @menu_bp.route('/captain/<username>')
 def captain(username):
     user = User.query.filter_by(username=username).first()
@@ -267,7 +283,7 @@ def captain(username):
         if user.expiry < str(date.today()):
             return render_template("expired.html", whatsapp=user.whatsapp)
 
-    items = Menu.query.filter_by(user_id=user.id).all()
+    items = Menu.query.filter_by(user_id=user.id, available=1).all()
     data = [(m.item, m.price, m.category, m.image) for m in items]
 
     categories = db.session.query(Menu.category).filter_by(

@@ -1,589 +1,912 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — {{username}}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-<style>
-:root {
-  --obsidian:   #0b0a09;
-  --coal:       #141210;
-  --ash:        #1e1c1a;
-  --deep:       #161412;
-  --ember:      #c8873a;
-  --ember-glow: #e0a050;
-  --ember-dim:  #8a5a20;
-  --cream:      #f2e8d9;
-  --cream-muted:#9a8a7a;
-  --divider:    rgba(200,135,58,0.18);
-  --success:    #22c55e;
-  --danger:     #ef4444;
-  --ff-display: 'Cormorant Garamond', Georgia, serif;
-  --ff-body:    'DM Sans', system-ui, sans-serif;
-  --ease:       cubic-bezier(0.16, 1, 0.3, 1);
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  font-family: var(--ff-body);
-  background: var(--obsidian);
-  color: var(--cream);
-  min-height: 100svh;
-  -webkit-font-smoothing: antialiased;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — {{username}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --obsidian: #0b0a09;
+      --coal: #141210;
+      --ash: #1e1c1a;
+      --deep: #161412;
+      --ember: #c8873a;
+      --ember-glow: #e0a050;
+      --ember-dim: #8a5a20;
+      --cream: #f2e8d9;
+      --cream-muted: #9a8a7a;
+      --divider: rgba(200, 135, 58, 0.18);
+      --success: #22c55e;
+      --danger: #ef4444;
+      --ff-display: 'Cormorant Garamond', Georgia, serif;
+      --ff-body: 'DM Sans', system-ui, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-/* ── NAV ─────────────────────────────────── */
-.nav {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(11,10,9,0.92);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--divider);
-  padding: 0 24px;
-  height: 62px;
-  display: flex; align-items: center;
-  justify-content: space-between; gap: 16px;
-}
-.nav-brand {
-  font-family: var(--ff-display);
-  font-size: 22px; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--ember-glow);
-}
-.nav-actions { display: flex; align-items: center; gap: 10px; }
-.nav-chip {
-  font-size: 12px; font-weight: 500;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 7px 14px; border-radius: 999px;
-  text-decoration: none; cursor: pointer;
-  border: 1px solid var(--divider);
-  transition: all 0.2s ease; white-space: nowrap;
-}
-.nav-chip.secondary { color: var(--cream-muted); background: transparent; }
-.nav-chip.secondary:hover { border-color: var(--ember); color: var(--ember-glow); }
-.nav-chip.primary { background: var(--ember); color: var(--obsidian); border-color: var(--ember); font-weight: 700; }
-.nav-chip.primary:hover { filter: brightness(1.1); }
-.nav-chip.danger { color: #fca5a5; background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
-.nav-chip.danger:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-/* ── LAYOUT ──────────────────────────────── */
-.page { max-width: 1000px; margin: 0 auto; padding: 28px 24px 60px; }
+    html {
+      scroll-behavior: smooth;
+    }
 
-/* ── SECTION HEADING ─────────────────────── */
-.section-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12px; margin-top: 32px;
-  animation: fadeUp 0.3s var(--ease) both;
-  cursor: pointer; padding: 6px; border-radius: 8px;
-  transition: background 0.2s ease;
-}
-.section-head:hover { background: rgba(200,135,58,0.06); }
-.section-head-left { display: flex; align-items: center; gap: 10px; }
-.section-icon { font-size: 20px; }
-.section-title {
-  font-family: var(--ff-display); font-size: 22px;
-  font-weight: 700; color: var(--ember-glow);
-}
-.section-toggle {
-  font-size: 14px; color: var(--cream-muted);
-  transition: transform 0.3s var(--ease-spring);
-}
-.section-head.collapsed .section-toggle { transform: rotate(-90deg); }
+    body {
+      font-family: var(--ff-body);
+      background: var(--obsidian);
+      color: var(--cream);
+      min-height: 100svh;
+      -webkit-font-smoothing: antialiased;
+    }
 
-.collapsible-wrapper {
-  display: grid; grid-template-rows: 1fr;
-  transition: grid-template-rows 0.3s var(--ease-spring);
-}
-.collapsible-wrapper.collapsed { grid-template-rows: 0fr; }
-.collapsible-content { overflow: hidden; }
+    /* ── NAV ─────────────────────────────────── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11, 10, 9, 0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--divider);
+      padding: 0 24px;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
 
-/* ── CARD ────────────────────────────────── */
-.card {
-  background: var(--deep);
-  border: 1px solid var(--divider);
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
-  animation: fadeUp 0.5s var(--ease) both;
-}
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(14px); }
-  to   { opacity:1; transform:translateY(0); }
-}
+    .nav-brand {
+      font-family: var(--ff-display);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ember-glow);
+    }
 
-/* ── FORM ELEMENTS ───────────────────────── */
-.field { margin-bottom: 16px; }
-.field label {
-  display: block;
-  font-size: 11px; font-weight: 500;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--cream-muted); margin-bottom: 7px;
-}
-.field .hint {
-  font-size: 12px; color: var(--ember-dim);
-  margin-top: 5px;
-}
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-input[type="text"], input[type="password"], input[type="number"],
-input:not([type="file"]):not([type="submit"]):not([type="checkbox"]) {
-  width: 100%;
-  background: var(--ash);
-  border: 1px solid rgba(200,135,58,0.15);
-  border-radius: 10px;
-  padding: 11px 14px;
-  font-family: var(--ff-body);
-  font-size: 15px; color: var(--cream);
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-input[type="file"] {
-  width: 100%;
-  background: var(--ash);
-  border: 1px dashed rgba(200,135,58,0.25);
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-family: var(--ff-body);
-  font-size: 14px; color: var(--cream-muted);
-  cursor: pointer; outline: none;
-}
-input:not([type="file"]):focus {
-  border-color: var(--ember);
-  background: var(--coal);
-  box-shadow: 0 0 0 3px rgba(200,135,58,0.1);
-}
+    .nav-chip {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 7px 14px;
+      border-radius: 999px;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid var(--divider);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
 
-.btn {
-  font-family: var(--ff-body);
-  font-size: 13px; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  padding: 11px 20px; border-radius: 10px;
-  border: none; cursor: pointer;
-  transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
-  display: inline-flex; align-items: center; gap: 7px;
-}
-.btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
-.btn:active { transform: scale(0.97); }
+    .nav-chip.secondary {
+      color: var(--cream-muted);
+      background: transparent;
+    }
 
-.btn-primary {
-  background: var(--ember); color: var(--obsidian);
-  box-shadow: 0 4px 14px rgba(200,135,58,0.3);
-}
-.btn-outline {
-  background: transparent;
-  border: 1px solid var(--ember);
-  color: var(--ember);
-}
-.btn-outline:hover { background: rgba(200,135,58,0.1); }
-.btn-sm { padding: 6px 14px; font-size: 12px; }
-.btn-block { width: 100%; justify-content: center; }
+    .nav-chip.secondary:hover {
+      border-color: var(--ember);
+      color: var(--ember-glow);
+    }
 
-/* ── TWO-COL FORM GRID ───────────────────── */
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 14px;
-}
-@media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+    .nav-chip.primary {
+      background: var(--ember);
+      color: var(--obsidian);
+      border-color: var(--ember);
+      font-weight: 700;
+    }
 
-/* ── UPLOAD BOX ──────────────────────────── */
-.upload-box {
-  border: 1.5px dashed rgba(200,135,58,0.25);
-  border-radius: 12px;
-  padding: 20px;
-  text-align: center;
-  background: rgba(200,135,58,0.03);
-  transition: border-color 0.2s ease;
-}
-.upload-box:hover { border-color: var(--ember); }
-.upload-box p { font-size: 12px; color: var(--cream-muted); margin-top: 10px; }
+    .nav-chip.primary:hover {
+      filter: brightness(1.1);
+    }
 
-/* ── STATS ROW ───────────────────────────── */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 14px;
-  margin-bottom: 24px;
-}
-.stat-card {
-  background: var(--deep);
-  border: 1px solid var(--divider);
-  border-radius: 14px; padding: 18px 20px;
-  animation: fadeUp 0.5s var(--ease) both;
-  position: relative; overflow: hidden;
-}
-.stat-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(to right, var(--ember), transparent);
-}
-.stat-label {
-  font-size: 11px; font-weight: 500;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--cream-muted); margin-bottom: 6px;
-}
-.stat-value {
-  font-family: var(--ff-display);
-  font-size: 32px; font-weight: 700;
-  color: var(--ember-glow); line-height: 1;
-}
+    .nav-chip.danger {
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.2);
+    }
 
-/* ── MENU LIST ───────────────────────────── */
-.menu-list { display: flex; flex-direction: column; gap: 0; }
-.menu-row {
-  display: flex; align-items: center;
-  gap: 14px; padding: 13px 0;
-  border-bottom: 1px solid rgba(200,135,58,0.08);
-  animation: fadeUp 0.4s var(--ease) both;
-  transition: background 0.2s ease;
-}
-.menu-row:last-child { border-bottom: none; }
-.menu-row:hover { background: rgba(200,135,58,0.03); margin: 0 -8px; padding: 13px 8px; border-radius: 8px; }
+    .nav-chip.danger:hover {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
 
-.menu-img {
-  width: 54px; height: 54px;
-  border-radius: 10px; object-fit: cover;
-  border: 1px solid var(--divider); flex-shrink: 0;
-}
-.menu-info { flex: 1; min-width: 0; }
-.menu-name {
-  font-family: var(--ff-display);
-  font-size: 17px; font-weight: 600;
-  color: var(--cream);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.menu-meta { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
-.menu-price { font-size: 14px; font-weight: 600; color: var(--ember-glow); }
-.menu-cat {
-  font-size: 11px; font-weight: 500;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--ember-dim);
-  background: rgba(200,135,58,0.1);
-  border: 1px solid rgba(200,135,58,0.15);
-  border-radius: 999px; padding: 2px 8px;
-}
-.menu-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.action-link {
-  font-size: 12px; font-weight: 600;
-  letter-spacing: 0.04em; text-transform: uppercase;
-  text-decoration: none; padding: 6px 12px;
-  border-radius: 8px; border: 1px solid;
-  transition: all 0.2s ease;
-}
-.action-link.edit {
-  color: #60a5fa;
-  border-color: rgba(96,165,250,0.25);
-  background: rgba(96,165,250,0.06);
-}
-.action-link.edit:hover { background: rgba(96,165,250,0.14); border-color: rgba(96,165,250,0.5); }
-.action-link.del {
-  color: #fca5a5;
-  border-color: rgba(239,68,68,0.25);
-  background: rgba(239,68,68,0.06);
-}
-.action-link.del:hover { background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.5); }
+    /* ── LAYOUT ──────────────────────────────── */
+    .page {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
 
-.empty-state {
-  text-align: center; padding: 40px 20px;
-}
-.empty-state .es-icon { font-size: 40px; opacity: 0.3; margin-bottom: 12px; }
-.empty-state p {
-  font-family: var(--ff-display);
-  font-size: 20px; font-style: italic;
-  color: var(--cream-muted);
-}
+    /* ── SECTION HEADING ─────────────────────── */
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      margin-top: 32px;
+      animation: fadeUp 0.3s var(--ease) both;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 8px;
+      transition: background 0.2s ease;
+    }
 
-/* ── QUICK LINKS ─────────────────────────── */
-.ql-section { margin-bottom: 24px; }
-.ql-title {
-  font-family: var(--ff-display); font-size: 18px;
-  font-weight: 700; color: var(--ember-glow);
-  margin-bottom: 12px; margin-top: 24px;
-}
-.quick-links {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;
-}
-.qlink {
-  font-size: 13px; font-weight: 500;
-  text-decoration: none; padding: 9px 16px;
-  border-radius: 10px; border: 1px solid var(--divider);
-  color: var(--cream-muted); background: var(--deep);
-  display: flex; align-items: center; gap: 7px;
-  transition: all 0.2s ease;
-}
-.qlink:hover { border-color: var(--ember); color: var(--ember-glow); background: rgba(200,135,58,0.06); }
+    .section-head:hover {
+      background: rgba(200, 135, 58, 0.06);
+    }
 
-@media (max-width: 600px) {
-  .nav { padding: 0 14px; }
-  .nav-brand { font-size: 18px; }
-  .page { padding: 18px 14px 60px; }
-  .card { padding: 16px; }
-  .menu-actions { flex-direction: column; gap: 5px; }
-}
-</style>
+    .section-head-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-icon {
+      font-size: 20px;
+    }
+
+    .section-title {
+      font-family: var(--ff-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ember-glow);
+    }
+
+    .section-toggle {
+      font-size: 14px;
+      color: var(--cream-muted);
+      transition: transform 0.3s var(--ease-spring);
+    }
+
+    .section-head.collapsed .section-toggle {
+      transform: rotate(-90deg);
+    }
+
+    .collapsible-wrapper {
+      display: grid;
+      grid-template-rows: 1fr;
+      transition: grid-template-rows 0.3s var(--ease-spring);
+    }
+
+    .collapsible-wrapper.collapsed {
+      grid-template-rows: 0fr;
+    }
+
+    .collapsible-content {
+      overflow: hidden;
+    }
+
+    /* ── CARD ────────────────────────────────── */
+    .card {
+      background: var(--deep);
+      border: 1px solid var(--divider);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.5s var(--ease) both;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ── FORM ELEMENTS ───────────────────────── */
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cream-muted);
+      margin-bottom: 7px;
+    }
+
+    .field .hint {
+      font-size: 12px;
+      color: var(--ember-dim);
+      margin-top: 5px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input:not([type="file"]):not([type="submit"]):not([type="checkbox"]) {
+      width: 100%;
+      background: var(--ash);
+      border: 1px solid rgba(200, 135, 58, 0.15);
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-family: var(--ff-body);
+      font-size: 15px;
+      color: var(--cream);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      background: var(--ash);
+      border: 1px dashed rgba(200, 135, 58, 0.25);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-family: var(--ff-body);
+      font-size: 14px;
+      color: var(--cream-muted);
+      cursor: pointer;
+      outline: none;
+    }
+
+    input:not([type="file"]):focus {
+      border-color: var(--ember);
+      background: var(--coal);
+      box-shadow: 0 0 0 3px rgba(200, 135, 58, 0.1);
+    }
+
+    .btn {
+      font-family: var(--ff-body);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 11px 20px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: var(--ember);
+      color: var(--obsidian);
+      box-shadow: 0 4px 14px rgba(200, 135, 58, 0.3);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--ember);
+      color: var(--ember);
+    }
+
+    .btn-outline:hover {
+      background: rgba(200, 135, 58, 0.1);
+    }
+
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 12px;
+    }
+
+    .btn-block {
+      width: 100%;
+      justify-content: center;
+    }
+
+    /* ── TWO-COL FORM GRID ───────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 640px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ── UPLOAD BOX ──────────────────────────── */
+    .upload-box {
+      border: 1.5px dashed rgba(200, 135, 58, 0.25);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      background: rgba(200, 135, 58, 0.03);
+      transition: border-color 0.2s ease;
+    }
+
+    .upload-box:hover {
+      border-color: var(--ember);
+    }
+
+    .upload-box p {
+      font-size: 12px;
+      color: var(--cream-muted);
+      margin-top: 10px;
+    }
+
+    /* ── STATS ROW ───────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--deep);
+      border: 1px solid var(--divider);
+      border-radius: 14px;
+      padding: 18px 20px;
+      animation: fadeUp 0.5s var(--ease) both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, var(--ember), transparent);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cream-muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-family: var(--ff-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--ember-glow);
+      line-height: 1;
+    }
+
+    /* ── MENU LIST ───────────────────────────── */
+    .menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .menu-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(200, 135, 58, 0.08);
+      animation: fadeUp 0.4s var(--ease) both;
+      transition: background 0.2s ease;
+    }
+
+    .menu-row:last-child {
+      border-bottom: none;
+    }
+
+    .menu-row:hover {
+      background: rgba(200, 135, 58, 0.03);
+      margin: 0 -8px;
+      padding: 13px 8px;
+      border-radius: 8px;
+    }
+
+    .menu-img {
+      width: 54px;
+      height: 54px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid var(--divider);
+      flex-shrink: 0;
+    }
+
+    .menu-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .menu-name {
+      font-family: var(--ff-display);
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--cream);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .menu-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 3px;
+    }
+
+    .menu-price {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ember-glow);
+    }
+
+    .menu-cat {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ember-dim);
+      background: rgba(200, 135, 58, 0.1);
+      border: 1px solid rgba(200, 135, 58, 0.15);
+      border-radius: 999px;
+      padding: 2px 8px;
+    }
+
+    .menu-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .action-link {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid;
+      transition: all 0.2s ease;
+    }
+
+    .action-link.edit {
+      color: #60a5fa;
+      border-color: rgba(96, 165, 250, 0.25);
+      background: rgba(96, 165, 250, 0.06);
+    }
+
+    .action-link.edit:hover {
+      background: rgba(96, 165, 250, 0.14);
+      border-color: rgba(96, 165, 250, 0.5);
+    }
+
+    .action-link.del {
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.06);
+    }
+
+    .action-link.del:hover {
+      background: rgba(239, 68, 68, 0.14);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    .action-link.stock {
+      color: #34d399;
+      border-color: rgba(52, 211, 153, 0.25);
+      background: rgba(52, 211, 153, 0.06);
+    }
+
+    .action-link.stock:hover {
+      background: rgba(52, 211, 153, 0.14);
+      border-color: rgba(52, 211, 153, 0.5);
+    }
+
+    .action-link.stock.out {
+      color: #fbbf24;
+      border-color: rgba(251, 191, 36, 0.25);
+      background: rgba(251, 191, 36, 0.06);
+    }
+
+    .menu-row.unavailable {
+      opacity: 0.5;
+    }
+
+    .oos-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #fbbf24;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .empty-state .es-icon {
+      font-size: 40px;
+      opacity: 0.3;
+      margin-bottom: 12px;
+    }
+
+    .empty-state p {
+      font-family: var(--ff-display);
+      font-size: 20px;
+      font-style: italic;
+      color: var(--cream-muted);
+    }
+
+    /* ── QUICK LINKS ─────────────────────────── */
+    .ql-section {
+      margin-bottom: 24px;
+    }
+
+    .ql-title {
+      font-family: var(--ff-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ember-glow);
+      margin-bottom: 12px;
+      margin-top: 24px;
+    }
+
+    .quick-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .qlink {
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 9px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--divider);
+      color: var(--cream-muted);
+      background: var(--deep);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+    }
+
+    .qlink:hover {
+      border-color: var(--ember);
+      color: var(--ember-glow);
+      background: rgba(200, 135, 58, 0.06);
+    }
+
+    @media (max-width: 600px) {
+      .nav {
+        padding: 0 14px;
+      }
+
+      .nav-brand {
+        font-size: 18px;
+      }
+
+      .page {
+        padding: 18px 14px 60px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .menu-actions {
+        flex-direction: column;
+        gap: 5px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- NAV -->
-<nav class="nav">
-  <span class="nav-brand">{{username}}</span>
-  <div class="nav-actions">
-    <a class="nav-chip secondary" href="/menu/{{username}}" target="_blank">View Menu ↗</a>
-    <a class="nav-chip secondary" href="/kitchen/{{username}}" target="_blank">Kitchen 🍳</a>
-    <a class="nav-chip primary"   href="/qr/{{username}}" target="_blank">QR Code</a>
-    <a class="nav-chip danger"    href="/logout">Logout</a>
-  </div>
-</nav>
+  <!-- NAV -->
+  <nav class="nav">
+    <span class="nav-brand">{{username}}</span>
+    <div class="nav-actions">
+      <a class="nav-chip secondary" href="/menu/{{username}}" target="_blank">View Menu ↗</a>
+      <a class="nav-chip secondary" href="/kitchen/{{username}}" target="_blank">Kitchen 🍳</a>
+      <a class="nav-chip primary" href="/qr/{{username}}" target="_blank">QR Code</a>
+      <a class="nav-chip danger" href="/logout">Logout</a>
+    </div>
+  </nav>
 
-<div class="page">
+  <div class="page">
 
-  <!-- STATS -->
-  <div class="stats-row">
-    <div class="stat-card" style="animation-delay:0s">
-      <div class="stat-label">Menu Items</div>
-      <div class="stat-value">{{data|length}}</div>
-    </div>
-    <div class="stat-card" style="animation-delay:0.06s">
-      <div class="stat-label">Categories</div>
-      <div class="stat-value">{{ data | map(attribute=3) | unique | list | length }}</div>
-    </div>
-    <div class="stat-card" style="animation-delay:0.12s">
-      <div class="stat-label">Table Count</div>
-      <div class="stat-value">{{ table_numbers.split(',') | length }}</div>
-    </div>
-    <div class="stat-card" style="animation-delay:0.18s">
-      <div class="stat-label">Orders Today</div>
-      <div class="stat-value">{{ orders_today | default(0) }}</div>
-    </div>
-    <div class="stat-card" style="animation-delay:0.24s">
-      <div class="stat-label">Revenue Today</div>
-      <div class="stat-value">₹{{ revenue_today | default(0) | int }}</div>
-    </div>
-  </div>
-
-  <!-- QUICK LINKS SECTION -->
-  <div class="ql-section">
-    
-    <div class="ql-title">Core Operations</div>
-    <div class="quick-links">
-      <a class="qlink" href="/menu/{{username}}" target="_blank">📱 Customer Menu</a>
-      <a class="qlink" href="/static/captain.apk" download>👔 Download Captain APK</a>
-      <a class="qlink" href="/kitchen/{{username}}" target="_blank">🍳 Kitchen</a>
-      <a class="qlink" href="/billing">💰 Billing</a>
-      <a class="qlink" href="/orders">📊 Order History</a>
-    </div>
-
-    <div class="ql-title" style="margin-top: 16px;">Share & Export</div>
-    <div class="quick-links">
-      <a class="qlink" href="/qr/{{username}}" target="_blank">🔲 QR Preivew</a>
-      <a class="qlink" href="/qr/{{username}}?type=png">⬇ Download QR PNG</a>
-      <a class="qlink" href="/qr/{{username}}?type=pdf">📄 Download QR PDF</a>
-      <a class="qlink" href="/menu_pdf/{{username}}">📋 Download Menu PDF</a>
-    </div>
-
-  </div>
-
-  <!-- RESTAURANT SETTINGS -->
-  <div class="section-head" style="animation-delay:0.1s" onclick="toggleSection('settings-sec', this)">
-    <div class="section-head-left">
-      <span class="section-icon">⚙️</span>
-      <span class="section-title">Restaurant Settings</span>
-    </div>
-    <span class="section-toggle">▼</span>
-  </div>
-  <div class="collapsible-wrapper collapsed" id="settings-sec" style="animation-delay:0.15s">
-    <div class="collapsible-content">
-      <div class="card">
-        <form method="POST" action="/update_restaurant" enctype="multipart/form-data">
-          <div class="form-grid">
-            <div class="field" style="grid-column:1/-1">
-              <label>Restaurant Address</label>
-              <input type="text" name="address" placeholder="Enter full address" value="{{address}}">
-            </div>
-            <div class="field" style="grid-column:1/-1">
-              <label>Table Numbers</label>
-              <input type="text" name="table_numbers" placeholder="1,2,3,4,5" value="{{table_numbers}}">
-              <div class="hint">Comma-separated. Customers choose from these when they scan the QR.</div>
-            </div>
-            <div class="field" style="grid-column:1/-1">
-              <label>Restaurant Slogan</label>
-              <input type="text" name="slogan" placeholder="e.g. Delicious Food Always" value="{{slogan | default('')}}">
-              <div class="hint">Appears under your restaurant name on the menu.</div>
-            </div>
-            <div class="field" style="grid-column:1/-1">
-              <label>Menu Theme</label>
-              <select name="theme_preset" style="width: 100%; background: var(--ash); border: 1px solid rgba(200,135,58,0.15); border-radius: 10px; padding: 11px 14px; font-family: var(--ff-body); font-size: 15px; color: var(--cream); outline: none;">
-                <option value="default" {% if theme_preset == 'default' %}selected{% endif %}>Classic Ember (Default)</option>
-                <option value="modern" {% if theme_preset == 'modern' %}selected{% endif %}>Modern Minimalist</option>
-                <option value="playful" {% if theme_preset == 'playful' %}selected{% endif %}>Playful & Vibrant</option>
-              </select>
-              <div class="hint">Choose the visual style for your customer-facing menu.</div>
-            </div>
-            <div class="field" style="grid-column:1/-1">
-              <label>Banner Image</label>
-              {% if banner %}
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-                <img src="/static/uploads/{{banner}}" style="height:48px;border-radius:8px;object-fit:cover" alt="banner">
-                <span style="font-size:13px;color:var(--muted);flex:1">{{banner}}</span>
-                <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.field').querySelector('.upload-toggle').style.display='block'; this.parentElement.style.display='none'">Modify</button>
-              </div>
-              <div class="upload-toggle" style="display:none">
-                <input type="file" name="banner" accept="image/png,image/jpeg,image/jpg">
-              </div>
-              {% else %}
-              <input type="file" name="banner" accept="image/png,image/jpeg,image/jpg">
-              {% endif %}
-            </div>
-            <div class="field" style="grid-column:1/-1">
-              <label>Restaurant Logo</label>
-              {% if logo %}
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-                <img src="/static/uploads/{{logo}}" style="height:48px;width:48px;border-radius:50%;object-fit:cover" alt="logo">
-                <span style="font-size:13px;color:var(--muted);flex:1">{{logo}}</span>
-                <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.field').querySelector('.upload-toggle').style.display='block'; this.parentElement.style.display='none'">Modify</button>
-              </div>
-              <div class="upload-toggle" style="display:none">
-                <input type="file" name="logo" accept="image/png,image/jpeg,image/jpg">
-              </div>
-              {% else %}
-              <input type="file" name="logo" accept="image/png,image/jpeg,image/jpg">
-              <div class="hint">Used in the splash screen, QR code, favicon, and social previews.</div>
-              {% endif %}
-            </div>
-            <div class="field" style="grid-column:1/-1">
-              <label>UPI QR Code</label>
-              {% if upi_qr %}
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-                <img src="/static/uploads/{{upi_qr}}" style="height:48px;width:48px;border-radius:8px;object-fit:cover" alt="upi">
-                <span style="font-size:13px;color:var(--muted);flex:1">{{upi_qr}}</span>
-                <button type="button" class="btn btn-outline btn-sm" onclick="this.closest('.field').querySelector('.upload-toggle').style.display='block'; this.parentElement.style.display='none'">Modify</button>
-              </div>
-              <div class="upload-toggle" style="display:none">
-                <input type="file" name="upi_qr" accept="image/png,image/jpeg,image/jpg">
-              </div>
-              {% else %}
-              <input type="file" name="upi_qr" accept="image/png,image/jpeg,image/jpg">
-              <div class="hint">Your UPI QR code for digital payments. Shown on printed bills.</div>
-              {% endif %}
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary">Save Settings</button>
-        </form>
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card" style="animation-delay:0s">
+        <div class="stat-label">Menu Items</div>
+        <div class="stat-value">{{data|length}}</div>
+      </div>
+      <div class="stat-card" style="animation-delay:0.06s">
+        <div class="stat-label">Categories</div>
+        <div class="stat-value">{{ data | map(attribute=3) | unique | list | length }}</div>
+      </div>
+      <div class="stat-card" style="animation-delay:0.12s">
+        <div class="stat-label">Table Count</div>
+        <div class="stat-value">{{ table_numbers.split(',') | length }}</div>
+      </div>
+      <div class="stat-card" style="animation-delay:0.18s">
+        <div class="stat-label">Orders Today</div>
+        <div class="stat-value">{{ orders_today | default(0) }}</div>
+      </div>
+      <div class="stat-card" style="animation-delay:0.24s">
+        <div class="stat-label">Revenue Today</div>
+        <div class="stat-value">₹{{ revenue_today | default(0) | int }}</div>
       </div>
     </div>
-  </div>
 
-  <!-- BULK UPLOAD -->
-  <div class="section-head collapsed" style="animation-delay:0.18s" onclick="toggleSection('bulk-sec', this)">
-    <div class="section-head-left">
-      <span class="section-icon">📊</span>
-      <span class="section-title">Bulk Upload via Excel</span>
+    <!-- QUICK LINKS SECTION -->
+    <div class="ql-section">
+
+      <div class="ql-title">Core Operations</div>
+      <div class="quick-links">
+        <a class="qlink" href="/menu/{{username}}" target="_blank">📱 Customer Menu</a>
+        <a class="qlink" href="/static/captain.apk" download>👔 Download Captain APK</a>
+        <a class="qlink" href="/kitchen/{{username}}" target="_blank">🍳 Kitchen</a>
+        <a class="qlink" href="/billing">💰 Billing</a>
+        <a class="qlink" href="/orders">📊 Order History</a>
+      </div>
+
+      <div class="ql-title" style="margin-top: 16px;">Share & Export</div>
+      <div class="quick-links">
+        <a class="qlink" href="/qr/{{username}}" target="_blank">🔲 QR Preview</a>
+        <a class="qlink" href="/qr/{{username}}?type=png">⬇ Download QR PNG</a>
+        <a class="qlink" href="/qr/{{username}}?type=pdf">📄 Download QR PDF</a>
+        <a class="qlink" href="/menu_pdf/{{username}}">📋 Download Menu PDF</a>
+      </div>
+
     </div>
-    <span class="section-toggle">▼</span>
-  </div>
-  <div class="collapsible-wrapper collapsed" id="bulk-sec" style="animation-delay:0.22s">
-    <div class="collapsible-content">
-      <div class="card">
-        <div class="upload-box">
-          <form action="/upload_excel" method="POST" enctype="multipart/form-data">
-            <input type="file" name="file" accept=".xlsx,.xls" required>
-            <p>Format: columns named <strong>item</strong> | <strong>price</strong> | <strong>category</strong></p>
-            <button type="submit" class="btn btn-primary" style="margin-top:14px">Upload Excel</button>
+
+    <!-- RESTAURANT SETTINGS -->
+    <div class="section-head" style="animation-delay:0.1s" onclick="toggleSection('settings-sec', this)">
+      <div class="section-head-left">
+        <span class="section-icon">⚙️</span>
+        <span class="section-title">Restaurant Settings</span>
+      </div>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="collapsible-wrapper collapsed" id="settings-sec" style="animation-delay:0.15s">
+      <div class="collapsible-content">
+        <div class="card">
+          <form method="POST" action="/update_restaurant" enctype="multipart/form-data">
+            <div class="form-grid">
+              <div class="field" style="grid-column:1/-1">
+                <label>Restaurant Address</label>
+                <input type="text" name="address" placeholder="Enter full address" value="{{address}}">
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <label>Table Numbers</label>
+                <input type="text" name="table_numbers" placeholder="1,2,3,4,5" value="{{table_numbers}}">
+                <div class="hint">Comma-separated. Customers choose from these when they scan the QR.</div>
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <label>Restaurant Slogan</label>
+                <input type="text" name="slogan" placeholder="e.g. Delicious Food Always"
+                  value="{{slogan | default('')}}">
+                <div class="hint">Appears under your restaurant name on the menu.</div>
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <label>Menu Theme</label>
+                <select name="theme_preset"
+                  style="width: 100%; background: var(--ash); border: 1px solid rgba(200,135,58,0.15); border-radius: 10px; padding: 11px 14px; font-family: var(--ff-body); font-size: 15px; color: var(--cream); outline: none;">
+                  <option value="default" {% if theme_preset=='default' %}selected{% endif %}>Classic Ember (Default)
+                  </option>
+                  <option value="modern" {% if theme_preset=='modern' %}selected{% endif %}>Modern Minimalist</option>
+                  <option value="playful" {% if theme_preset=='playful' %}selected{% endif %}>Playful & Vibrant</option>
+                </select>
+                <div class="hint">Choose the visual style for your customer-facing menu.</div>
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <label>Banner Image</label>
+                {% if banner %}
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                  <img src="/static/uploads/{{banner}}" style="height:48px;border-radius:8px;object-fit:cover"
+                    alt="banner">
+                  <span style="font-size:13px;color:var(--muted);flex:1">{{banner}}</span>
+                  <button type="button" class="btn btn-outline btn-sm"
+                    onclick="this.closest('.field').querySelector('.upload-toggle').style.display='block'; this.parentElement.style.display='none'">Modify</button>
+                </div>
+                <div class="upload-toggle" style="display:none">
+                  <input type="file" name="banner" accept="image/png,image/jpeg,image/jpg">
+                </div>
+                {% else %}
+                <input type="file" name="banner" accept="image/png,image/jpeg,image/jpg">
+                {% endif %}
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <label>Restaurant Logo</label>
+                {% if logo %}
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                  <img src="/static/uploads/{{logo}}" style="height:48px;width:48px;border-radius:50%;object-fit:cover"
+                    alt="logo">
+                  <span style="font-size:13px;color:var(--muted);flex:1">{{logo}}</span>
+                  <button type="button" class="btn btn-outline btn-sm"
+                    onclick="this.closest('.field').querySelector('.upload-toggle').style.display='block'; this.parentElement.style.display='none'">Modify</button>
+                </div>
+                <div class="upload-toggle" style="display:none">
+                  <input type="file" name="logo" accept="image/png,image/jpeg,image/jpg">
+                </div>
+                {% else %}
+                <input type="file" name="logo" accept="image/png,image/jpeg,image/jpg">
+                <div class="hint">Used in the splash screen, QR code, favicon, and social previews.</div>
+                {% endif %}
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <label>UPI QR Code</label>
+                {% if upi_qr %}
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                  <img src="/static/uploads/{{upi_qr}}"
+                    style="height:48px;width:48px;border-radius:8px;object-fit:cover" alt="upi">
+                  <span style="font-size:13px;color:var(--muted);flex:1">{{upi_qr}}</span>
+                  <button type="button" class="btn btn-outline btn-sm"
+                    onclick="this.closest('.field').querySelector('.upload-toggle').style.display='block'; this.parentElement.style.display='none'">Modify</button>
+                </div>
+                <div class="upload-toggle" style="display:none">
+                  <input type="file" name="upi_qr" accept="image/png,image/jpeg,image/jpg">
+                </div>
+                {% else %}
+                <input type="file" name="upi_qr" accept="image/png,image/jpeg,image/jpg">
+                <div class="hint">Your UPI QR code for digital payments. Shown on printed bills.</div>
+                {% endif %}
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Settings</button>
           </form>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ADD ITEM -->
-  <div class="section-head collapsed" style="animation-delay:0.24s" onclick="toggleSection('add-sec', this)">
-    <div class="section-head-left">
-      <span class="section-icon">➕</span>
-      <span class="section-title">Add Menu Item</span>
+    <!-- BULK UPLOAD -->
+    <div class="section-head collapsed" style="animation-delay:0.18s" onclick="toggleSection('bulk-sec', this)">
+      <div class="section-head-left">
+        <span class="section-icon">📊</span>
+        <span class="section-title">Bulk Upload via Excel</span>
+      </div>
+      <span class="section-toggle">▼</span>
     </div>
-    <span class="section-toggle">▼</span>
-  </div>
-  <div class="collapsible-wrapper collapsed" id="add-sec" style="animation-delay:0.28s">
-    <div class="collapsible-content">
-      <div class="card">
-        <form method="POST" enctype="multipart/form-data">
-          <div class="form-grid">
-            <div class="field">
-              <label>Item Name</label>
-              <input type="text" name="item" placeholder="e.g. Chicken Biryani" required>
-            </div>
-            <div class="field">
-              <label>Price (₹)</label>
-              <input type="text" name="price" placeholder="e.g. 250" required>
-            </div>
-            <div class="field">
-              <label>Category</label>
-              <input type="text" name="category" placeholder="e.g. Main Course" required>
-            </div>
-            <div class="field" style="grid-column:1/-1">
-              <label>Item Image (Optional)</label>
-              <input type="file" name="image" accept="image/png,image/jpeg,image/jpg">
-            </div>
+    <div class="collapsible-wrapper collapsed" id="bulk-sec" style="animation-delay:0.22s">
+      <div class="collapsible-content">
+        <div class="card">
+          <div class="upload-box">
+            <form action="/upload_excel" method="POST" enctype="multipart/form-data">
+              <input type="file" name="file" accept=".xlsx,.xls" required>
+              <p>Format: columns named <strong>item</strong> | <strong>price</strong> | <strong>category</strong></p>
+              <button type="submit" class="btn btn-primary" style="margin-top:14px">Upload Excel</button>
+            </form>
           </div>
-          <button type="submit" class="btn btn-primary">Add Item</button>
-        </form>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- MENU LIST -->
-  <div class="section-head" style="animation-delay:0.3s" onclick="toggleSection('menu-sec', this)">
-    <div class="section-head-left">
-      <span class="section-icon">🍽</span>
-      <span class="section-title">Your Menu ({{data|length}} items)</span>
+    <!-- ADD ITEM -->
+    <div class="section-head collapsed" style="animation-delay:0.24s" onclick="toggleSection('add-sec', this)">
+      <div class="section-head-left">
+        <span class="section-icon">➕</span>
+        <span class="section-title">Add Menu Item</span>
+      </div>
+      <span class="section-toggle">▼</span>
     </div>
-    <span class="section-toggle">▼</span>
-  </div>
-  <div class="collapsible-wrapper" id="menu-sec" style="animation-delay:0.34s">
-    <div class="collapsible-content">
-      <div class="card" style="padding: 16px 24px;">
-        {% if data %}
-        <div class="menu-list">
-          {% for d in data %}
-          <div class="menu-row" style="animation-delay:{{ loop.index0 * 0.03 }}s">
-            <img class="menu-img"
-              src="/static/uploads/{{d[4] if d[4] else 'default.jpg'}}"
-              alt="{{d[1]}}"
-              onerror="this.src='/static/uploads/defult-food.jpg'">
-            <div class="menu-info">
-              <div class="menu-name">{{d[1]}}</div>
-              <div class="menu-meta">
-                <span class="menu-price">₹{{d[2]}}</span>
-                <span class="menu-cat">{{d[3]}}</span>
+    <div class="collapsible-wrapper collapsed" id="add-sec" style="animation-delay:0.28s">
+      <div class="collapsible-content">
+        <div class="card">
+          <form method="POST" enctype="multipart/form-data">
+            <div class="form-grid">
+              <div class="field">
+                <label>Item Name</label>
+                <input type="text" name="item" placeholder="e.g. Chicken Biryani" required>
+              </div>
+              <div class="field">
+                <label>Price (₹)</label>
+                <input type="text" name="price" placeholder="e.g. 250" required>
+              </div>
+              <div class="field">
+                <label>Category</label>
+                <input type="text" name="category" placeholder="e.g. Main Course" required>
+              </div>
+              <div class="field" style="grid-column:1/-1">
+                <label>Item Image (Optional)</label>
+                <input type="file" name="image" accept="image/png,image/jpeg,image/jpg">
               </div>
             </div>
-            <div class="menu-actions">
-              <a class="action-link edit" href="/edit/{{d[0]}}">Edit</a>
-              <a class="action-link del"  href="/delete/{{d[0]}}"
-                onclick="return confirm('Delete {{d[1]}}?')">Delete</a>
-            </div>
-          </div>
-          {% endfor %}
+            <button type="submit" class="btn btn-primary">Add Item</button>
+          </form>
         </div>
-        {% else %}
-        <div class="empty-state">
-          <div class="es-icon">🍽</div>
-          <p>No items yet — add your first dish above!</p>
-        </div>
-        {% endif %}
       </div>
     </div>
+
+    <!-- MENU LIST -->
+    <div class="section-head" style="animation-delay:0.3s" onclick="toggleSection('menu-sec', this)">
+      <div class="section-head-left">
+        <span class="section-icon">🍽</span>
+        <span class="section-title">Your Menu ({{data|length}} items)</span>
+      </div>
+      <span class="section-toggle">▼</span>
+    </div>
+    <div class="collapsible-wrapper" id="menu-sec" style="animation-delay:0.34s">
+      <div class="collapsible-content">
+        <div class="card" style="padding: 16px 24px;">
+          {% if data %}
+          <div class="menu-list">
+            {% for d in data %}
+            <div class="menu-row {% if not d[5] %}unavailable{% endif %}"
+              style="animation-delay:{{ loop.index0 * 0.03 }}s">
+              <img class="menu-img" src="/static/uploads/{{d[4] if d[4] else 'default.jpg'}}" alt="{{d[1]}}"
+                onerror="this.src='/static/uploads/defult-food.jpg'">
+              <div class="menu-info">
+                <div class="menu-name">{{d[1]}} {% if not d[5] %}<span class="oos-badge">Out of Stock</span>{% endif %}
+                </div>
+                <div class="menu-meta">
+                  <span class="menu-price">₹{{d[2]}}</span>
+                  <span class="menu-cat">{{d[3]}}</span>
+                </div>
+              </div>
+              <div class="menu-actions">
+                <form method="POST" action="/toggle_available/{{d[0]}}" style="display:inline">
+                  <button type="submit" class="action-link stock {% if not d[5] %}out{% endif %}">{% if d[5] %}In
+                    Stock{% else %}Restock{% endif %}</button>
+                </form>
+                <a class="action-link edit" href="/edit/{{d[0]}}">Edit</a>
+                <a class="action-link del" href="/delete/{{d[0]}}"
+                  onclick="return confirm('Delete {{d[1]}}?')">Delete</a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <div class="es-icon">🍽</div>
+            <p>No items yet — add your first dish above!</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
   </div>
 
-</div>
+  <script>
+    function toggleSection(id, headerEl) {
+      const wrapper = document.getElementById(id);
+      wrapper.classList.toggle('collapsed');
+      headerEl.classList.toggle('collapsed');
+    }
+  </script>
 
-<script>
-function toggleSection(id, headerEl) {
-  const wrapper = document.getElementById(id);
-  wrapper.classList.toggle('collapsed');
-  headerEl.classList.toggle('collapsed');
-}
-</script>
+  {% include 'sr_footer.html' %}
 </body>
+
 </html>

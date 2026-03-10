@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Set Expiry</title>
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             min-height: 100vh;
@@ -16,6 +20,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(145deg, #eef2ff, #f8f9ff);
         }
+
         .card {
             width: min(420px, 100%);
             background: #fff;
@@ -24,7 +29,12 @@
             padding: 20px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
-        h3 { margin-top: 0; margin-bottom: 12px; }
+
+        h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
         input {
             width: 100%;
             padding: 11px;
@@ -33,6 +43,7 @@
             margin-bottom: 12px;
             font-size: 16px;
         }
+
         button {
             width: 100%;
             border: none;
@@ -43,14 +54,20 @@
             font-weight: 600;
             cursor: pointer;
         }
-        button:hover { background: #5366d7; }
+
+        button:hover {
+            background: #5366d7;
+        }
     </style>
 </head>
+
 <body>
     <form class="card" method="POST">
         <h3>Set Expiry Date</h3>
         <input type="date" name="expiry" required>
         <button>Save</button>
     </form>
+    {% include 'sr_footer.html' %}
 </body>
+
 </html>

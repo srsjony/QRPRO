@@ -46,7 +46,7 @@ def extend(id):
     return redirect('/superadmin')
 
 
-@admin_bp.route('/delete_user/<int:id>')
+@admin_bp.route('/delete_user/<int:id>', methods=['POST'])
 @admin_required
 def delete_user(id):
     user = User.query.get_or_404(id)

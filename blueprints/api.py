@@ -15,6 +15,7 @@ def place_order():
     username = data.get('username')
     table = data.get('table')
     items = data.get('items', [])
+    notes = data.get('notes', '').strip()
 
     if not username or not table or not items:
         return jsonify({"error": "Missing fields"}), 400
@@ -28,6 +29,7 @@ def place_order():
     order = Order(
         user_id=user.id,
         table_no=str(table),
+        notes=notes,
         total=total,
         status='pending',
         created_at=datetime.now()
@@ -72,11 +74,30 @@ def kitchen_orders(username):
             "table": o.table_no,
             "status": o.status,
             "total": o.total,
+            "notes": o.notes or '',
             "created_at": o.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             "items": items
         })
 
     return jsonify({"orders": result})
+
+
+# ================= TABLE STATUS =================
+@api_bp.route('/api/table_status/<username>')
+def table_status(username):
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"tables": {}}), 404
+
+    active_orders = Order.query.filter(
+        Order.user_id == user.id,
+        Order.status.notin_(['settled', 'cancelled'])
+    ).all()
+
+    # Dictionary: table_no -> set of statuses. Just simple "occupied" if any order exists.
+    occupied_tables = {o.table_no: "occupied" for o in active_orders}
+
+    return jsonify({"tables": occupied_tables})
 
 
 # ================= UPDATE ORDER STATUS =================
@@ -112,9 +133,6 @@ def settle_table():
 
     for o in orders:
         o.status = 'settled'
-
-    db.session.commit()
-    return jsonify({"success": True, "settled": len(orders)})
 
     db.session.commit()
     return jsonify({"success": True, "settled": len(orders)})

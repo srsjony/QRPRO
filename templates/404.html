@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: 'DM Sans', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0b0a09;
+            color: #f2e8d9;
+            text-align: center;
+            padding: 24px
+        }
+
+        .wrap {
+            max-width: 400px
+        }
+
+        .code {
+            font-size: 120px;
+            font-weight: 800;
+            color: #c8873a;
+            line-height: 1;
+            margin-bottom: 8px;
+            text-shadow: 0 4px 24px rgba(200, 135, 58, 0.3)
+        }
+
+        .msg {
+            font-size: 18px;
+            color: #b8a898;
+            margin-bottom: 32px
+        }
+
+        a {
+            display: inline-block;
+            padding: 14px 32px;
+            background: #c8873a;
+            color: #0b0a09;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            transition: transform 0.1s
+        }
+
+        a:hover {
+            transform: translateY(-2px)
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="code">404</div>
+        <div class="msg">This page doesn't exist or has been moved.</div>
+        <a href="/">Go Home</a>
+    </div>
+    {% include 'sr_footer.html' %}
+</body>
+
+</html>

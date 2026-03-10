@@ -34,6 +34,7 @@ class Menu(db.Model):
     price = db.Column(db.String(20), nullable=False)
     category = db.Column(db.String(100))
     image = db.Column(db.String(200))
+    available = db.Column(db.Integer, default=1)  # 1=available, 0=out of stock
 
 
 class Order(db.Model):
@@ -43,6 +44,7 @@ class Order(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     table_no = db.Column(db.String(20), nullable=False)
     items = db.Column(db.Text)  # backward compat with old orders
+    notes = db.Column(db.String(500), default='')
     total = db.Column(db.Float, default=0)
     status = db.Column(db.String(20), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.now)

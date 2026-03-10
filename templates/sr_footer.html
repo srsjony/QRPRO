@@ -1,0 +1,342 @@
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Rajdhani:wght@400;600&display=swap');
+
+    .sr-footer-wrapper * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box
+    }
+
+    .sr-footer-wrapper {
+        font-family: 'Rajdhani', sans-serif;
+        width: 100%;
+        display: block;
+    }
+
+    .sr-footer-wrapper footer {
+        width: 100%;
+        background: linear-gradient(180deg, #0e0e16 0%, #111120 100%);
+        border-top: 1px solid rgba(0, 245, 255, 0.2);
+    }
+
+    .sr-footer-wrapper .ft-topbar {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 0, 128, 0.6) 30%, rgba(0, 245, 255, 0.6) 65%, transparent);
+    }
+
+    /* ── Single column centred ── */
+    .sr-footer-wrapper .ft-inner {
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 24px 24px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+    }
+
+    /* Logo */
+    .sr-footer-wrapper .ft-logo {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 44px;
+        letter-spacing: -1.5px;
+        line-height: 1;
+    }
+
+    .sr-footer-wrapper .ft-logo .s {
+        background: linear-gradient(135deg, #ff0080, #ff6a00);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        filter: drop-shadow(0 0 10px rgba(255, 0, 128, 0.5));
+    }
+
+    .sr-footer-wrapper .ft-logo .r {
+        background: linear-gradient(135deg, #00f5ff, #0080ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        filter: drop-shadow(0 0 10px rgba(0, 245, 255, 0.5));
+    }
+
+    .sr-footer-wrapper .ft-tagline {
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 9px;
+        letter-spacing: 4px;
+        color: #00f5ff;
+        text-transform: uppercase;
+    }
+
+    .sr-footer-wrapper .ft-desc {
+        font-size: 14px;
+        color: #ffffff;
+        line-height: 1.75;
+    }
+
+    /* Divider */
+    .sr-footer-wrapper .ft-rule {
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+    }
+
+    /* Contact */
+    .sr-footer-wrapper .ft-contact {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .sr-footer-wrapper .ft-contact-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 11px;
+        color: #ffffff;
+        text-decoration: none;
+        padding: 6px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.03);
+        transition: border-color 0.3s, background 0.3s;
+    }
+
+    .sr-footer-wrapper .ft-contact-item:hover {
+        border-color: rgba(0, 245, 255, 0.3);
+        background: rgba(0, 245, 255, 0.05);
+        color: #00f5ff;
+    }
+
+    .sr-footer-wrapper .ci-icon {
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .sr-footer-wrapper .ci-label {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        text-align: left;
+    }
+
+    .sr-footer-wrapper .ci-label span:first-child {
+        font-size: 8px;
+        color: rgba(255, 255, 255, 0.4);
+        letter-spacing: 3px;
+        text-transform: uppercase;
+    }
+
+    .sr-footer-wrapper .ci-label span:last-child {
+        color: #ffffff;
+    }
+
+    .sr-footer-wrapper .ft-contact-item:hover .ci-label span:last-child {
+        color: #00f5ff;
+    }
+
+    .sr-footer-wrapper .ci-live {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #aaff00;
+        box-shadow: 0 0 6px #aaff00;
+        margin-left: auto;
+        flex-shrink: 0;
+        animation: srblink 2.5s ease-in-out infinite;
+    }
+
+    @keyframes srblink {
+
+        0%,
+        100% {
+            opacity: 1
+        }
+
+        50% {
+            opacity: 0.15
+        }
+    }
+
+    /* Services */
+    .sr-footer-wrapper .ft-services {
+        width: 100%;
+    }
+
+    .sr-footer-wrapper .ft-col-title {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 14px;
+        letter-spacing: 5px;
+        color: #ffffff;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+
+    .sr-footer-wrapper .ft-links {
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px 0;
+    }
+
+    .sr-footer-wrapper .ft-links li {
+        width: 50%;
+    }
+
+    .sr-footer-wrapper .ft-links li a {
+        color: #ffffff;
+        font-size: 12px;
+        text-decoration: none;
+        font-family: 'Share Tech Mono', monospace;
+        letter-spacing: 0.5px;
+        transition: color 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .sr-footer-wrapper .ft-links li a::before {
+        content: '//';
+        color: #ff0080;
+        font-size: 9px;
+    }
+
+    .sr-footer-wrapper .ft-links li a:hover {
+        color: #00f5ff;
+    }
+
+    /* Socials */
+    .sr-footer-wrapper .ft-socials {
+        display: flex;
+        gap: 8px;
+    }
+
+    .sr-footer-wrapper .ft-soc {
+        width: 36px;
+        height: 36px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 10px;
+        cursor: pointer;
+        transition: color 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .sr-footer-wrapper .ft-soc:hover {
+        color: #00f5ff;
+        border-color: rgba(0, 245, 255, 0.4);
+        box-shadow: 0 0 10px rgba(0, 245, 255, 0.15);
+    }
+
+    /* Bottom */
+    .sr-footer-wrapper .ft-bottom {
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 10px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .sr-footer-wrapper .ft-copy {
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 10px;
+        color: #ffffff;
+        letter-spacing: 1.5px;
+        opacity: 0.6;
+    }
+
+    .sr-footer-wrapper .ft-copy span {
+        color: #ff0080;
+        opacity: 1;
+    }
+
+    .sr-footer-wrapper .ft-version {
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 9px;
+        color: rgba(0, 245, 255, 0.5);
+        letter-spacing: 2px;
+    }
+
+    /* Print styles to ensure footer is hidden on bills/invoices */
+    @media print {
+        .sr-footer-wrapper {
+            display: none !important;
+        }
+    }
+</style>
+
+<div class="sr-footer-wrapper">
+    <footer>
+        <div class="ft-topbar"></div>
+
+        <div class="ft-inner">
+
+            <!-- Logo -->
+            <div class="ft-logo"><span class="s">SR</span><span class="r">SOFTWARE</span></div>
+            <div class="ft-tagline">// Innovation · Solutions · Code //</div>
+
+            <p class="ft-desc">Building next-generation software solutions. We engineer the future, one commit at a
+                time.</p>
+
+            <div class="ft-rule"></div>
+
+            <!-- Contact -->
+            <div class="ft-contact">
+                <a class="ft-contact-item" href="tel:+919647697495">
+                    <span class="ci-icon">📞</span>
+                    <div class="ci-label">
+                        <span>Call Us</span>
+                        <span>+91 96476 97495</span>
+                    </div>
+                    <div class="ci-live"></div>
+                </a>
+                <a class="ft-contact-item" href="mailto:srsoftwaresteam@gmail.com">
+                    <span class="ci-icon">✉</span>
+                    <div class="ci-label">
+                        <span>Email Us</span>
+                        <span>srsoftwaresteam@gmail.com</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="ft-rule"></div>
+
+            <!-- Services -->
+            <div class="ft-services">
+                <div class="ft-col-title">Services</div>
+                <ul class="ft-links">
+                    <li><a href="#">Web Development</a></li>
+                    <li><a href="#">Mobile Apps</a></li>
+                    <li><a href="#">Cloud Solutions</a></li>
+                    <li><a href="#">AI Integration</a></li>
+                    <li><a href="#">Cybersecurity</a></li>
+                    <li><a href="#">Consulting</a></li>
+                </ul>
+            </div>
+
+            <div class="ft-rule"></div>
+
+            <!-- Socials -->
+            <div class="ft-socials">
+                <div class="ft-soc">GH</div>
+                <div class="ft-soc">TW</div>
+                <div class="ft-soc">LN</div>
+                <div class="ft-soc">YT</div>
+            </div>
+
+        </div>
+
+        <div class="ft-bottom">
+            <div class="ft-copy">© 2025 <span>SR SOFTWARE</span>. All rights reserved.</div>
+            <div class="ft-version">v2.0.1</div>
+        </div>
+    </footer>
+</div>

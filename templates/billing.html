@@ -1,400 +1,860 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Billing — {{username}}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-<style>
-:root {
-  --obsidian:   #0b0a09;
-  --coal:       #141210;
-  --ash:        #1e1c1a;
-  --deep:       #161412;
-  --ember:      #c8873a;
-  --ember-glow: #e0a050;
-  --cream:      #f2e8d9;
-  --cream-muted:#9a8a7a;
-  --divider:    rgba(200,135,58,0.18);
-  --success:    #22c55e;
-  --danger:     #ef4444;
-  --ff-display: 'Cormorant Garamond', Georgia, serif;
-  --ff-body:    'DM Sans', system-ui, sans-serif;
-  --ease:       cubic-bezier(0.16, 1, 0.3, 1);
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: var(--ff-body);
-  background: var(--obsidian);
-  color: var(--cream);
-  min-height: 100svh;
-  -webkit-font-smoothing: antialiased;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing — {{username}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+    integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    :root {
+      --obsidian: #0b0a09;
+      --coal: #141210;
+      --ash: #1e1c1a;
+      --deep: #161412;
+      --ember: #c8873a;
+      --ember-glow: #e0a050;
+      --cream: #f2e8d9;
+      --cream-muted: #9a8a7a;
+      --divider: rgba(200, 135, 58, 0.18);
+      --success: #22c55e;
+      --danger: #ef4444;
+      --ff-display: 'Cormorant Garamond', Georgia, serif;
+      --ff-body: 'DM Sans', system-ui, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-/* NAV */
-.nav {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(11,10,9,0.92);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--divider);
-  padding: 0 24px; height: 62px;
-  display: flex; align-items: center;
-  justify-content: space-between;
-}
-.nav-brand {
-  font-family: var(--ff-display);
-  font-size: 22px; font-weight: 700;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--ember-glow);
-}
-.nav-chip {
-  font-size: 12px; font-weight: 500;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 7px 14px; border-radius: 999px;
-  text-decoration: none; cursor: pointer;
-  border: 1px solid var(--divider);
-  color: var(--cream-muted); background: transparent;
-  transition: all 0.2s ease;
-}
-.nav-chip:hover { border-color: var(--ember); color: var(--ember-glow); }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-.page { max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; }
+    body {
+      font-family: var(--ff-body);
+      background: var(--obsidian);
+      color: var(--cream);
+      min-height: 100svh;
+      -webkit-font-smoothing: antialiased;
+    }
 
-.page-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
-}
-.page-title { font-family: var(--ff-display); font-size: 28px; font-weight: 700; color: var(--cream); }
-.page-subtitle { font-size: 13px; color: var(--cream-muted); }
+    /* NAV */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11, 10, 9, 0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--divider);
+      padding: 0 24px;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-/* STATS */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 14px; margin-bottom: 24px;
-}
-.stat-card {
-  background: var(--deep); border: 1px solid var(--divider);
-  border-radius: 14px; padding: 16px 18px;
-  animation: fadeUp 0.5s var(--ease) both;
-  position: relative; overflow: hidden;
-}
-.stat-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(to right, var(--ember), transparent);
-}
-.stat-label { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cream-muted); margin-bottom: 4px; }
-.stat-value { font-family: var(--ff-display); font-size: 28px; font-weight: 700; color: var(--ember-glow); line-height: 1; }
-@keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    .nav-brand {
+      font-family: var(--ff-display);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ember-glow);
+    }
 
-/* TABLE GRID */
-.table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-.table-card {
-  background: var(--deep); border: 1px solid var(--divider);
-  border-radius: 16px; padding: 20px;
-  animation: fadeUp 0.5s var(--ease) both;
-  transition: border-color 0.25s, transform 0.2s;
-}
-.table-card:hover { border-color: var(--ember); transform: translateY(-2px); }
-.table-card.settled { opacity: 0.45; pointer-events: none; }
+    .nav-chip {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 7px 14px;
+      border-radius: 999px;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid var(--divider);
+      color: var(--cream-muted);
+      background: transparent;
+      transition: all 0.2s ease;
+    }
 
-.tc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.tc-table-no { font-family: var(--ff-display); font-size: 24px; font-weight: 700; color: var(--ember-glow); }
-.tc-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; }
-.tc-badge.active { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
-.tc-badge.clear { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
+    .nav-chip:hover {
+      border-color: var(--ember);
+      color: var(--ember-glow);
+    }
 
-.tc-items { margin-bottom: 14px; }
-.tc-item-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(200,135,58,0.06); font-size: 13px; }
-.tc-item-row:last-child { border-bottom: none; }
-.tc-item-name { color: var(--cream); flex: 1; }
-.tc-item-qty { color: var(--cream-muted); min-width: 35px; text-align: center; font-size: 12px; }
-.tc-item-price { color: var(--ember-glow); min-width: 60px; text-align: right; font-weight: 600; }
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
 
-.tc-total-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 0; border-top: 1px solid var(--divider); }
-.tc-total-label { font-family: var(--ff-display); font-size: 16px; font-weight: 700; color: var(--cream); }
-.tc-total-val { font-family: var(--ff-display); font-size: 26px; font-weight: 700; color: var(--ember-glow); }
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
 
-/* PAYMENT MODAL */
-.pay-modal-overlay {
-  display: none; position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
-  align-items: center; justify-content: center;
-}
-.pay-modal-overlay.open { display: flex; }
-.pay-modal {
-  background: var(--deep); border: 1px solid var(--divider);
-  border-radius: 18px; padding: 28px 32px; width: 320px;
-  text-align: center; animation: fadeUp 0.3s var(--ease);
-}
-.pay-modal h3 {
-  font-family: var(--ff-display); font-size: 22px;
-  font-weight: 700; color: var(--cream); margin-bottom: 18px;
-}
-.pay-modal-btns { display: flex; flex-direction: column; gap: 10px; }
-.pay-modal-btn {
-  font-family: var(--ff-body); font-size: 14px; font-weight: 600;
-  padding: 14px; border-radius: 12px; border: 1px solid var(--divider);
-  background: transparent; color: var(--cream); cursor: pointer;
-  transition: all 0.2s;
-}
-.pay-modal-btn:hover { border-color: var(--ember); color: var(--ember-glow); background: rgba(200,135,58,0.08); }
-.pay-modal-cancel {
-  font-family: var(--ff-body); font-size: 12px;
-  background: none; border: none; color: var(--cream-muted);
-  cursor: pointer; margin-top: 12px; padding: 6px;
-}
-.pay-modal-cancel:hover { color: var(--danger); }
+    .page-title {
+      font-family: var(--ff-display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--cream);
+    }
 
-.tc-actions { display: flex; gap: 8px; margin-top: 10px; }
-.tc-btn {
-  flex: 1; font-family: var(--ff-body); font-size: 12px; font-weight: 600;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  padding: 10px 14px; border-radius: 10px; border: none; cursor: pointer;
-  transition: all 0.2s ease; text-align: center;
-}
-.tc-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-.tc-btn.settle { background: var(--success); color: #fff; }
-.tc-btn.print { background: transparent; color: var(--cream-muted); border: 1px solid var(--divider); }
-.tc-btn.print:hover { border-color: var(--ember); color: var(--ember-glow); }
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--cream-muted);
+    }
 
-.no-tables { text-align: center; padding: 60px 20px; }
-.no-tables .nt-icon { font-size: 48px; opacity: 0.3; margin-bottom: 12px; }
-.no-tables p { font-family: var(--ff-display); font-size: 20px; font-style: italic; color: var(--cream-muted); }
+    /* STATS */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
 
-/* ── PRINT RECEIPT (Traditional POS) ──────────────────────── */
-#printArea { display: none; }
+    .stat-card {
+      background: var(--deep);
+      border: 1px solid var(--divider);
+      border-radius: 14px;
+      padding: 16px 18px;
+      animation: fadeUp 0.5s var(--ease) both;
+      position: relative;
+      overflow: hidden;
+    }
 
-@media print {
-  body { background: #fff !important; color: #000 !important; }
-  .nav, .stats-row, .page-header, .page, .no-print, .pay-modal-overlay { display: none !important; }
-  #printArea {
-    display: block !important;
-    width: 80mm; margin: 0 auto;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 11px; color: #000;
-  }
-  .receipt { padding: 4px; }
-  .receipt-header { text-align: center; margin-bottom: 5px; }
-  .receipt-logo { max-width: 120px; max-height: 50px; object-fit: contain; margin: 0 auto 4px; display: block; }
-  .receipt-name { font-size: 18px; font-weight: bold; margin-bottom: 2px; }
-  .receipt-addr { font-size: 10px; font-weight: normal; margin-bottom: 1px; }
-  .receipt-ph { font-size: 10px; font-weight: bold; }
-  
-  .r-divider-double {
-    border-top: 3px double #000;
-    margin: 6px 0;
-  }
-  .r-divider-single {
-    border-top: 1px solid #000;
-    margin: 4px 0;
-  }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, var(--ember), transparent);
+    }
 
-  /* Meta table (Bill No, Date, To) */
-  .receipt-meta { width: 100%; border-collapse: collapse; font-size: 11px; font-weight: bold; margin-bottom: 4px; }
-  .receipt-meta td { vertical-align: top; padding: 1px 0; }
-  
-  /* Items table */
-  .receipt-items { width: 100%; border-collapse: collapse; margin-bottom: 2px; }
-  .receipt-items th { font-size: 10px; font-weight: bold; text-align: left; padding: 3px 0; border-bottom: 1px solid #000; }
-  .receipt-items td { padding: 2px 0; font-size: 11px; vertical-align: top; font-weight: bold; }
-  
-  /* Alignment helpers */
-  .th-sr { width: 15px; }
-  .th-part { width: auto; }
-  .th-qty { width: 25px; text-align: center !important; }
-  .th-rate { width: 45px; text-align: right !important; }
-  .th-amt { width: 50px; text-align: right !important; }
-  
-  .td-right { text-align: right; }
-  .td-center { text-align: center; }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cream-muted);
+      margin-bottom: 4px;
+    }
 
-  .receipt-totals { width: 100%; border-collapse: collapse; font-size: 11px; font-weight: bold; margin-top: 2px; }
-  .receipt-totals td { padding: 2px 0; }
-  .net-amount { font-size: 18px; font-weight: bold; }
+    .stat-value {
+      font-family: var(--ff-display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--ember-glow);
+      line-height: 1;
+    }
 
-  .receipt-payment { text-align: center; margin-top: 10px; }
-  .receipt-payment-label { font-size: 11px; font-weight: bold; text-transform: uppercase; border: 1px dashed #000; display: inline-block; padding: 2px 8px; }
-  .receipt-upi-qr { width: 80px; height: 80px; margin: 6px auto; display: block; }
-  
-  .receipt-footer { font-size: 10px; font-style: italic; margin-top: 8px; font-weight: bold; }
-}
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
 
-@media (max-width: 600px) {
-  .nav { padding: 0 14px; }
-  .page { padding: 18px 14px 60px; }
-  .table-grid { grid-template-columns: 1fr; }
-}
-</style>
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* TABLE GRID */
+    .table-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .table-card {
+      background: var(--deep);
+      border: 1px solid var(--divider);
+      border-radius: 16px;
+      padding: 20px;
+      animation: fadeUp 0.5s var(--ease) both;
+      transition: border-color 0.25s, transform 0.2s;
+    }
+
+    .table-card:hover {
+      border-color: var(--ember);
+      transform: translateY(-2px);
+    }
+
+    .table-card.settled {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .tc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .tc-table-no {
+      font-family: var(--ff-display);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--ember-glow);
+    }
+
+    .tc-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .tc-badge.active {
+      background: rgba(245, 158, 11, 0.12);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .tc-badge.clear {
+      background: rgba(34, 197, 94, 0.12);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+
+    .tc-items {
+      margin-bottom: 14px;
+    }
+
+    .tc-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(200, 135, 58, 0.06);
+      font-size: 13px;
+    }
+
+    .tc-item-row:last-child {
+      border-bottom: none;
+    }
+
+    .tc-item-name {
+      color: var(--cream);
+      flex: 1;
+    }
+
+    .tc-item-qty {
+      color: var(--cream-muted);
+      min-width: 35px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .tc-item-price {
+      color: var(--ember-glow);
+      min-width: 60px;
+      text-align: right;
+      font-weight: 600;
+    }
+
+    .tc-total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0 0;
+      border-top: 1px solid var(--divider);
+    }
+
+    .tc-total-label {
+      font-family: var(--ff-display);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--cream);
+    }
+
+    .tc-total-val {
+      font-family: var(--ff-display);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--ember-glow);
+    }
+
+    /* PAYMENT MODAL */
+    .pay-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pay-modal-overlay.open {
+      display: flex;
+    }
+
+    .pay-modal {
+      background: var(--deep);
+      border: 1px solid var(--divider);
+      border-radius: 18px;
+      padding: 28px 32px;
+      width: 320px;
+      text-align: center;
+      animation: fadeUp 0.3s var(--ease);
+    }
+
+    .pay-modal h3 {
+      font-family: var(--ff-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--cream);
+      margin-bottom: 18px;
+    }
+
+    .pay-modal-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .pay-modal-btn {
+      font-family: var(--ff-body);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--divider);
+      background: transparent;
+      color: var(--cream);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pay-modal-btn:hover {
+      border-color: var(--ember);
+      color: var(--ember-glow);
+      background: rgba(200, 135, 58, 0.08);
+    }
+
+    .wa-input {
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      background: var(--ash);
+      border: 1px solid var(--divider);
+      border-radius: 10px;
+      color: var(--cream);
+      font-family: inherit;
+      font-size: 16px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .wa-input:focus {
+      border-color: #25D366;
+    }
+
+    .wa-send-btn {
+      width: 100%;
+      padding: 12px;
+      background: #25D366;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .wa-send-btn:hover {
+      background: #128C7E;
+    }
+
+    .pay-modal-cancel {
+      font-family: var(--ff-body);
+      font-size: 12px;
+      background: none;
+      border: none;
+      color: var(--cream-muted);
+      cursor: pointer;
+      margin-top: 12px;
+      padding: 6px;
+    }
+
+    .pay-modal-cancel:hover {
+      color: var(--danger);
+    }
+
+    .tc-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .tc-btn {
+      flex: 1;
+      font-family: var(--ff-body);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .tc-btn:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .tc-btn.settle {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .tc-btn.print {
+      background: transparent;
+      color: var(--cream-muted);
+      border: 1px solid var(--divider);
+    }
+
+    .tc-btn.print:hover {
+      border-color: var(--ember);
+      color: var(--ember-glow);
+    }
+
+    .tc-btn.wa {
+      background: rgba(37, 211, 102, 0.1);
+      color: #25D366;
+      border: 1px solid rgba(37, 211, 102, 0.3);
+    }
+
+    .tc-btn.wa:hover {
+      background: #25D366;
+      color: #fff;
+    }
+
+    .no-tables {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .no-tables .nt-icon {
+      font-size: 48px;
+      opacity: 0.3;
+      margin-bottom: 12px;
+    }
+
+    .no-tables p {
+      font-family: var(--ff-display);
+      font-size: 20px;
+      font-style: italic;
+      color: var(--cream-muted);
+    }
+
+    /* ── PRINT RECEIPT (Traditional POS) ──────────────────────── */
+    #printArea {
+      display: none;
+    }
+
+    @media print {
+      body {
+        background: #fff !important;
+        color: #000 !important;
+      }
+
+      .nav,
+      .stats-row,
+      .page-header,
+      .page,
+      .no-print,
+      .pay-modal-overlay {
+        display: none !important;
+      }
+
+      #printArea {
+        display: block !important;
+        width: 80mm;
+        margin: 0 auto;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 11px;
+        color: #000;
+      }
+
+      .receipt {
+        padding: 4px;
+      }
+
+      .receipt-header {
+        text-align: center;
+        margin-bottom: 5px;
+      }
+
+      .receipt-logo {
+        max-width: 120px;
+        max-height: 50px;
+        object-fit: contain;
+        margin: 0 auto 4px;
+        display: block;
+      }
+
+      .receipt-name {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 2px;
+      }
+
+      .receipt-addr {
+        font-size: 10px;
+        font-weight: normal;
+        margin-bottom: 1px;
+      }
+
+      .receipt-ph {
+        font-size: 10px;
+        font-weight: bold;
+      }
+
+      .r-divider-double {
+        border-top: 3px double #000;
+        margin: 6px 0;
+      }
+
+      .r-divider-single {
+        border-top: 1px solid #000;
+        margin: 4px 0;
+      }
+
+      /* Meta table (Bill No, Date, To) */
+      .receipt-meta {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+        font-weight: bold;
+        margin-bottom: 4px;
+      }
+
+      .receipt-meta td {
+        vertical-align: top;
+        padding: 1px 0;
+      }
+
+      /* Items table */
+      .receipt-items {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 2px;
+      }
+
+      .receipt-items th {
+        font-size: 10px;
+        font-weight: bold;
+        text-align: left;
+        padding: 3px 0;
+        border-bottom: 1px solid #000;
+      }
+
+      .receipt-items td {
+        padding: 2px 0;
+        font-size: 11px;
+        vertical-align: top;
+        font-weight: bold;
+      }
+
+      /* Alignment helpers */
+      .th-sr {
+        width: 15px;
+      }
+
+      .th-part {
+        width: auto;
+      }
+
+      .th-qty {
+        width: 25px;
+        text-align: center !important;
+      }
+
+      .th-rate {
+        width: 45px;
+        text-align: right !important;
+      }
+
+      .th-amt {
+        width: 50px;
+        text-align: right !important;
+      }
+
+      .td-right {
+        text-align: right;
+      }
+
+      .td-center {
+        text-align: center;
+      }
+
+      .receipt-totals {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+        font-weight: bold;
+        margin-top: 2px;
+      }
+
+      .receipt-totals td {
+        padding: 2px 0;
+      }
+
+      .net-amount {
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .receipt-payment {
+        text-align: center;
+        margin-top: 10px;
+      }
+
+      .receipt-payment-label {
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+        border: 1px dashed #000;
+        display: inline-block;
+        padding: 2px 8px;
+      }
+
+      .receipt-upi-qr {
+        width: 80px;
+        height: 80px;
+        margin: 6px auto;
+        display: block;
+      }
+
+      .receipt-footer {
+        font-size: 10px;
+        font-style: italic;
+        margin-top: 8px;
+        font-weight: bold;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .nav {
+        padding: 0 14px;
+      }
+
+      .page {
+        padding: 18px 14px 60px;
+      }
+
+      .table-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<nav class="nav">
-  <span class="nav-brand">Billing</span>
-  <div style="display:flex;gap:8px">
-    <a class="nav-chip" href="/dashboard">← Dashboard</a>
-  </div>
-</nav>
+  <nav class="nav">
+    <span class="nav-brand">Billing</span>
+    <div style="display:flex;gap:8px">
+      <a class="nav-chip" href="/dashboard">← Dashboard</a>
+    </div>
+  </nav>
 
-<div class="page">
-  <div class="page-header">
-    <div>
-      <div class="page-title">Table-Wise Billing</div>
-      <div class="page-subtitle">Today's active tables — {{today}}</div>
-    </div>
-  </div>
-
-  <div class="stats-row no-print">
-    <div class="stat-card" style="animation-delay:0s">
-      <div class="stat-label">Active Tables</div>
-      <div class="stat-value">{{tables|length}}</div>
-    </div>
-    <div class="stat-card" style="animation-delay:0.06s">
-      <div class="stat-label">Total Bill</div>
-      <div class="stat-value">₹{{grand_total|int}}</div>
-    </div>
-    <div class="stat-card" style="animation-delay:0.12s">
-      <div class="stat-label">Orders</div>
-      <div class="stat-value">{{total_orders}}</div>
-    </div>
-  </div>
-
-  {% if tables %}
-  <div class="table-grid">
-    {% for t in tables %}
-    <div class="table-card" id="table-{{t.table_no}}" style="animation-delay:{{loop.index0 * 0.06}}s"
-         data-table="{{t.table_no}}" data-total="{{t.total|int}}">
-      <div class="tc-header">
-        <div class="tc-table-no">Table {{t.table_no}}</div>
-        <span class="tc-badge active">{{t.orders|length}} order{{ 's' if t.orders|length > 1 }}</span>
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Table-Wise Billing</div>
+        <div class="page-subtitle">Today's active tables — {{today}}</div>
       </div>
-      <div class="tc-items">
-        {% for item in t.line_items %}
-        <div class="tc-item-row" data-name="{{item.name}}" data-qty="{{item.qty}}" data-price="{{item.subtotal|int}}">
-          <span class="tc-item-name">{{item.name}}</span>
-          <span class="tc-item-qty">×{{item.qty}}</span>
-          <span class="tc-item-price">₹{{item.subtotal|int}}</span>
+    </div>
+
+    <div class="stats-row no-print">
+      <div class="stat-card" style="animation-delay:0s">
+        <div class="stat-label">Active Tables</div>
+        <div class="stat-value">{{tables|length}}</div>
+      </div>
+      <div class="stat-card" style="animation-delay:0.06s">
+        <div class="stat-label">Total Bill</div>
+        <div class="stat-value">₹{{grand_total|int}}</div>
+      </div>
+      <div class="stat-card" style="animation-delay:0.12s">
+        <div class="stat-label">Orders</div>
+        <div class="stat-value">{{total_orders}}</div>
+      </div>
+    </div>
+
+    {% if tables %}
+    <div class="table-grid">
+      {% for t in tables %}
+      <div class="table-card" id="table-{{t.table_no}}" style="animation-delay:{{loop.index0 * 0.06}}s"
+        data-table="{{t.table_no}}" data-total="{{t.total|int}}">
+        <div class="tc-header">
+          <div class="tc-table-no">Table {{t.table_no}}</div>
+          <span class="tc-badge active">{{t.orders|length}} order{{ 's' if t.orders|length > 1 }}</span>
         </div>
-        {% endfor %}
-      </div>
-      <div class="tc-total-row">
-        <span class="tc-total-label">Total</span>
-        <span class="tc-total-val">₹{{t.total|int}}</span>
-      </div>
+        <div class="tc-items">
+          {% for item in t.line_items %}
+          <div class="tc-item-row" data-name="{{item.name}}" data-qty="{{item.qty}}" data-price="{{item.subtotal|int}}">
+            <span class="tc-item-name">{{item.name}}</span>
+            <span class="tc-item-qty">×{{item.qty}}</span>
+            <span class="tc-item-price">₹{{item.subtotal|int}}</span>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="tc-total-row">
+          <span class="tc-total-label">Total</span>
+          <span class="tc-total-val">₹{{t.total|int}}</span>
+        </div>
 
-      <div class="tc-actions">
-        <button class="tc-btn print" onclick="askPayment('{{t.table_no}}')">🖨 Print Bill</button>
-        <button class="tc-btn settle" onclick="settleTable('{{t.table_no}}')">✓ Settle</button>
+        <div class="tc-actions">
+          <button class="tc-btn print" onclick="askPayment('{{t.table_no}}')">🖨 Print</button>
+          <button class="tc-btn wa" onclick="openWaModal('{{t.table_no}}')">💬 WA Bill</button>
+          <button class="tc-btn settle" onclick="settleTable('{{t.table_no}}')">✓ Settle</button>
+        </div>
       </div>
+      {% endfor %}
     </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="no-tables">
-    <div class="nt-icon">🪑</div>
-    <p>No active table bills today</p>
-  </div>
-  {% endif %}
-</div>
-
-<!-- PAYMENT METHOD MODAL -->
-<div class="pay-modal-overlay" id="payModal">
-  <div class="pay-modal">
-    <h3>Payment Method</h3>
-    <div class="pay-modal-btns">
-      <button class="pay-modal-btn" onclick="confirmPrint('cash')">💵 Cash</button>
-      <button class="pay-modal-btn" onclick="confirmPrint('card')">💳 Card</button>
-      {% if upi_qr %}
-      <button class="pay-modal-btn" onclick="confirmPrint('upi')">📱 UPI (Show QR)</button>
-      {% endif %}
+    {% else %}
+    <div class="no-tables">
+      <div class="nt-icon">🪑</div>
+      <p>No active table bills today</p>
     </div>
-    <button class="pay-modal-cancel" onclick="closePayModal()">Cancel</button>
+    {% endif %}
   </div>
-</div>
 
-<!-- HIDDEN PRINT RECEIPT -->
-<div id="printArea">
-  <div class="receipt" id="receiptContent"></div>
-</div>
+  <!-- PAYMENT METHOD MODAL -->
+  <div class="pay-modal-overlay" id="payModal">
+    <div class="pay-modal">
+      <h3>Payment Method</h3>
+      <div class="pay-modal-btns">
+        <button class="pay-modal-btn" onclick="confirmPrint('cash')">💵 Cash</button>
+        <button class="pay-modal-btn" onclick="confirmPrint('card')">💳 Card</button>
+        {% if upi_qr %}
+        <button class="pay-modal-btn" onclick="confirmPrint('upi')">📱 UPI (Show QR)</button>
+        {% endif %}
+      </div>
+      <button class="pay-modal-cancel" onclick="closePayModal()">Cancel</button>
+    </div>
+  </div>
 
-<script>
-const LOGO = "{{ logo or '' }}";
-const ADDRESS = "{{ address or '' }}";
-const UPI_QR = "{{ upi_qr or '' }}";
-const REST_NAME = "{{ username }}";
+  <!-- WHATSAPP MODAL -->
+  <div class="pay-modal-overlay" id="waModal">
+    <div class="pay-modal">
+      <h3>WhatsApp Bill</h3>
+      <input type="number" id="waPhone" class="wa-input" placeholder="Enter 10-digit number">
+      <button class="wa-send-btn" onclick="sendWhatsAppBill()">Send Bill</button>
+      <button class="pay-modal-cancel" onclick="closeWaModal()">Cancel</button>
+    </div>
+  </div>
 
-let pendingTable = null;
+  <!-- HIDDEN PRINT RECEIPT -->
+  <div id="printArea">
+    <div class="receipt" id="receiptContent"></div>
+  </div>
 
-function askPayment(tableNo) {
-  pendingTable = tableNo;
-  document.getElementById('payModal').classList.add('open');
-}
-function closePayModal() {
-  document.getElementById('payModal').classList.remove('open');
-  pendingTable = null;
-}
-function confirmPrint(method) {
-  const table = pendingTable;
-  closePayModal();
-  printBill(table, method);
-}
+  <script>
+    const LOGO = "{{ logo or '' }}";
+    const ADDRESS = "{{ address or '' }}";
+    const UPI_QR = "{{ upi_qr or '' }}";
+    const REST_NAME = "{{ username }}";
 
-function printBill(tableNo, payMethod) {
-  const card = document.getElementById('table-' + tableNo);
-  const total = card.dataset.total;
-  const rows = card.querySelectorAll('.tc-item-row');
+    let pendingTable = null;
 
-  let itemsHtml = '';
-  // Generate random bill no for look
-  const billNo = Math.floor(100 + Math.random() * 900);
-  
-  // Current time
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).replace(/ /g, '-');
-  const timeStr = now.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit', second:'2-digit', hour12:true});
+    function askPayment(tableNo) {
+      pendingTable = tableNo;
+      document.getElementById('payModal').classList.add('open');
+    }
+    function closePayModal() {
+      document.getElementById('payModal').classList.remove('open');
+      pendingTable = null;
+    }
+    function confirmPrint(method) {
+      const table = pendingTable;
+      closePayModal();
+      printBill(table, method);
+    }
 
-  let sr = 1;
-  rows.forEach(r => {
-    const qty = parseInt(r.dataset.qty);
-    const sub = parseFloat(r.dataset.price);
-    const rate = (sub / qty).toFixed(2);
-    itemsHtml += `<tr>
+    function printBill(tableNo, payMethod) {
+      const card = document.getElementById('table-' + tableNo);
+      const total = card.dataset.total;
+      const rows = card.querySelectorAll('.tc-item-row');
+
+      let itemsHtml = '';
+      // Generate random bill no for look
+      const billNo = Math.floor(100 + Math.random() * 900);
+
+      // Current time
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+      const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+
+      let sr = 1;
+      rows.forEach(r => {
+        const qty = parseInt(r.dataset.qty);
+        const sub = parseFloat(r.dataset.price);
+        const rate = (sub / qty).toFixed(2);
+        itemsHtml += `<tr>
       <td>${sr}</td>
       <td>${r.dataset.name}</td>
       <td class="td-center">${qty}</td>
       <td class="td-right">${rate}</td>
       <td class="td-right">${sub.toFixed(2)}</td>
     </tr>`;
-    sr++;
-  });
+        sr++;
+      });
 
-  let paymentHtml = '';
-  if (payMethod === 'upi' && UPI_QR) {
-    paymentHtml = `
+      let paymentHtml = '';
+      if (payMethod === 'upi' && UPI_QR) {
+        paymentHtml = `
       <div class="receipt-payment">
         <span class="receipt-payment-label">UPI</span>
         <img src="/static/uploads/${UPI_QR}" class="receipt-upi-qr" alt="UPI QR">
       </div>`;
-  } else if (payMethod === 'card') {
-    paymentHtml = `<div class="receipt-payment"><span class="receipt-payment-label">CARD</span></div>`;
-  } else if (payMethod === 'cash') {
-    paymentHtml = `<div class="receipt-payment"><span class="receipt-payment-label">CASH</span></div>`;
-  }
+      } else if (payMethod === 'card') {
+        paymentHtml = `<div class="receipt-payment"><span class="receipt-payment-label">CARD</span></div>`;
+      } else if (payMethod === 'cash') {
+        paymentHtml = `<div class="receipt-payment"><span class="receipt-payment-label">CASH</span></div>`;
+      }
 
-  let logoSrc = LOGO ? "/static/uploads/" + LOGO : "";
-  const logoHtml = logoSrc ? `<img src="${logoSrc}" class="receipt-logo" alt="logo">` : '';
+      let logoSrc = LOGO ? "/static/uploads/" + LOGO : "";
+      const logoHtml = logoSrc ? `<img src="${logoSrc}" class="receipt-logo" alt="logo">` : '';
 
-  // Extract phone number from address if possible (e.g. "Ph: 9876543210")
-  let pureAddress = ADDRESS;
-  let phStr = "";
-  const phoneMatch = ADDRESS.match(/(?:Ph|Phone|Contact|Mob|Mobile)?\s*[:.-]?\s*(\+?\d{10,13})/i);
-  if (phoneMatch) {
-    phStr = "Ph. : " + phoneMatch[1];
-  }
+      // Extract phone number from address if possible (e.g. "Ph: 9876543210")
+      let pureAddress = ADDRESS;
+      let phStr = "";
+      const phoneMatch = ADDRESS.match(/(?:Ph|Phone|Contact|Mob|Mobile)?\s*[:.-]?\s*(\+?\d{10,13})/i);
+      if (phoneMatch) {
+        phStr = "Ph. : " + phoneMatch[1];
+      }
 
-  document.getElementById('receiptContent').innerHTML = `
+      document.getElementById('receiptContent').innerHTML = `
     <div class="receipt-header">
       ${logoHtml}
       <div class="receipt-name">${REST_NAME}</div>
@@ -459,36 +919,228 @@ function printBill(tableNo, payMethod) {
     </div>
   `;
 
-  window.print();
-}
-
-async function settleTable(tableNo) {
-  if (!confirm('Settle bill for Table ' + tableNo + '?')) return;
-
-  try {
-    const res = await fetch('/api/settle', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ table: tableNo }),
-      credentials: 'same-origin'
-    });
-
-    const data = await res.json();
-
-    if (res.ok && data.success) {
-      const card = document.getElementById('table-' + tableNo);
-      card.classList.add('settled');
-      card.querySelector('.tc-badge').textContent = 'SETTLED';
-      card.querySelector('.tc-badge').className = 'tc-badge clear';
-      setTimeout(() => location.reload(), 600);
-    } else {
-      alert('Failed: ' + (data.error || 'Unknown error'));
+      window.print();
     }
-  } catch (e) {
-    alert('Network error: ' + e.message);
-  }
-}
-</script>
 
+    async function settleTable(tableNo) {
+      if (!confirm('Settle bill for Table ' + tableNo + '?')) return;
+
+      try {
+        const res = await fetch('/api/settle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ table: tableNo }),
+          credentials: 'same-origin'
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          const card = document.getElementById('table-' + tableNo);
+          card.classList.add('settled');
+          card.querySelector('.tc-badge').textContent = 'SETTLED';
+          card.querySelector('.tc-badge').className = 'tc-badge clear';
+          setTimeout(() => location.reload(), 600);
+        } else {
+          alert('Failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('Network error: ' + e.message);
+      }
+    }
+
+    // ── WHATSAPP BILL ────────────────────────────────────────
+    let pendingWaTable = null;
+
+    function openWaModal(tableNo) {
+      pendingWaTable = tableNo;
+      document.getElementById('waPhone').value = '';
+      document.getElementById('waModal').classList.add('open');
+      // Auto focus input on modern browsers
+      setTimeout(() => document.getElementById('waPhone').focus(), 100);
+    }
+
+    function closeWaModal() {
+      document.getElementById('waModal').classList.remove('open');
+      pendingWaTable = null;
+    }
+
+    async function sendWhatsAppBill() {
+      const phone = document.getElementById('waPhone').value.trim();
+      if (!phone || phone.length < 10) {
+        alert("Please enter a valid phone number.");
+        return;
+      }
+
+      const tableNo = pendingWaTable;
+      closeWaModal();
+
+      // Temporarily reveal the print area to capture it
+      const printArea = document.getElementById('printArea');
+
+      // Generate the receipt HTML the exact same way printBill does
+      const card = document.getElementById('table-' + tableNo);
+      const total = card.dataset.total;
+      const rows = card.querySelectorAll('.tc-item-row');
+
+      let itemsHtml = '';
+      const billNo = Math.floor(100 + Math.random() * 900);
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+      const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+
+      let sr = 1;
+      rows.forEach(r => {
+        const qty = parseInt(r.dataset.qty);
+        const sub = parseFloat(r.dataset.price);
+        const rate = (sub / qty).toFixed(2);
+        itemsHtml += `<tr>
+      <td>${sr}</td>
+      <td>${r.dataset.name}</td>
+      <td class="td-center">${qty}</td>
+      <td class="td-right">${rate}</td>
+      <td class="td-right">${sub.toFixed(2)}</td>
+    </tr>`;
+        sr++;
+      });
+
+      let paymentHtml = '';
+      if (UPI_QR) {
+        paymentHtml = `
+      <div class="receipt-payment">
+        <span class="receipt-payment-label">Scan to Pay UPI</span>
+        <img src="/static/uploads/${UPI_QR}" class="receipt-upi-qr" alt="UPI QR">
+      </div>`;
+      }
+
+      let logoSrc = LOGO ? "/static/uploads/" + LOGO : "";
+      const logoHtml = logoSrc ? `<img src="${logoSrc}" class="receipt-logo" alt="logo">` : '';
+
+      let pureAddress = ADDRESS;
+      let phStr = "";
+      const phoneMatch = ADDRESS.match(/(?:Ph|Phone|Contact|Mob|Mobile)?\s*[:.-]?\s*(\+?\d{10,13})/i);
+      if (phoneMatch) {
+        phStr = "Ph. : " + phoneMatch[1];
+      }
+
+      document.getElementById('receiptContent').innerHTML = `
+    <div class="receipt-header" style="background: white; color: black; padding: 20px; font-family: sans-serif; min-width: 320px;">
+      ${logoHtml}
+      <div class="receipt-name" style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">${REST_NAME}</div>
+      <div class="receipt-addr" style="font-size: 14px;">${pureAddress}</div>
+    </div>
+    <div style="background: white; padding: 0 20px 20px; color: black; font-family: monospace;">
+      <div style="border-top: 2px dashed #ccc; margin: 10px 0;"></div>
+      <table style="width: 100%; font-size: 14px;">
+        <tr>
+          <td>Bill No: <b>${billNo}</b></td>
+          <td style="text-align: right;">Date: <b>${dateStr}</b></td>
+        </tr>
+        <tr>
+          <td>Table: <b>${tableNo}</b></td>
+          <td style="text-align: right;">Time: <b>${timeStr}</b></td>
+        </tr>
+        ${phStr ? `<tr><td colspan="2"><b>${phStr}</b></td></tr>` : ''}
+      </table>
+      <div style="border-top: 2px dashed #ccc; margin: 10px 0;"></div>
+      <table style="width: 100%; font-size: 14px; text-align: left;">
+        <thead>
+          <tr style="border-bottom: 1px solid #000;">
+            <th>Item</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: right;">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Array.from(rows).map(r => `
+            <tr>
+              <td style="padding-top: 5px;">${r.dataset.name}</td>
+              <td style="text-align: center; padding-top: 5px;">${r.dataset.qty}</td>
+              <td style="text-align: right; padding-top: 5px;">${parseFloat(r.dataset.price).toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div style="border-top: 2px dashed #ccc; margin: 15px 0;"></div>
+      <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: bold;">
+        <span>Total Due</span>
+        <span>₹${parseFloat(total).toFixed(2)}</span>
+      </div>
+      <div style="border-top: 2px dashed #ccc; margin: 15px 0;"></div>
+      ${paymentHtml}
+      <div style="text-align: center; margin-top: 20px; font-size: 14px; font-style: italic;">Thank you for dining with us!</div>
+    </div>
+  `;
+
+      // Temporarily show it offscreen to force it to render
+      const receiptEl = document.getElementById('receiptContent');
+      printArea.style.display = 'block';
+      printArea.style.position = 'absolute';
+      printArea.style.top = '-9999px';
+
+      try {
+        const btn = document.querySelector('.wa-send-btn');
+        btn.innerHTML = "Generating PDF...";
+
+        // Setup Web Share API standard phone formatting (no spaces/plus)
+        let waPhone = phone.replace(/[^0-9]/g, '');
+        if (waPhone.length === 10) waPhone = "91" + waPhone; // assume India default
+
+        // Configure PDF generation
+        const opt = {
+          margin: [10, 10, 10, 10], // pt
+          filename: `Invoice_Table_${tableNo}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'pt', format: 'a5', orientation: 'portrait' }
+        };
+
+        // Generate PDF Blob
+        const pdfWorker = html2pdf().set(opt).from(receiptEl);
+        const pdfBlob = await pdfWorker.output('blob');
+
+        const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
+        const shareData = {
+          files: [file],
+          title: `Bill for Table ${tableNo}`,
+          text: `Here is your dining invoice from ${REST_NAME} (Table ${tableNo}). Thank you!`
+        };
+
+        printArea.style.display = 'none'; // hide again
+        btn.innerHTML = "Send Bill";
+
+        if (navigator.canShare && navigator.canShare(shareData)) {
+          // Devices that support Web Share API (Mobile phones, Safari)
+          try {
+            await navigator.share(shareData);
+          } catch (err) {
+            console.error("Share failed", err);
+          }
+        } else {
+          // PCs and Desktops: Download the PDF and open WhatsApp Web
+          const link = document.createElement('a');
+          link.download = file.name;
+          link.href = URL.createObjectURL(pdfBlob);
+          link.click();
+
+          // Note: Specific number targeting via wa.me can't attach local files.
+          // We open the number chat so the staff can quickly paste/attach.
+          const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent("Here is your invoice. Please attach the downloaded PDF.")}`;
+          setTimeout(() => {
+            window.open(waUrl, '_blank');
+          }, 1000);
+        }
+
+      } catch (err) {
+        console.error(err);
+        alert("Failed to generate PDF.");
+        printArea.style.display = 'none';
+        document.querySelector('.wa-send-btn').innerHTML = "Send Bill";
+      }
+    }
+  </script>
+
+  {% include 'sr_footer.html' %}
 </body>
+
 </html>
