@@ -6,4 +6,5 @@ Pillow==11.1.0
 openpyxl==3.1.5
 reportlab==4.2.5
 gunicorn==23.0.0
-python-dotenv==1.0.1flaskwebgui==1.1.9
+python-dotenv==1.0.1
+flaskwebgui==1.1.9
