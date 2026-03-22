@@ -512,7 +512,10 @@
     <div class="header">
       <button class="header-btn" onclick="goBackToTables()">‹</button>
       <div class="header-title">Table <span id="hdr-table">1</span></div>
-      <button class="header-btn" onclick="clearOrder()">↺</button>
+      <div style="display:flex; gap:4px;">
+        <button class="header-btn" onclick="printBill()" title="Print Bill">🖨️</button>
+        <button class="header-btn" onclick="clearOrder()" title="Clear Form">↺</button>
+      </div>
     </div>
 
     <div class="search-bar-wrap">
@@ -753,6 +756,32 @@
       } finally {
         btn.disabled = false;
         btn.innerHTML = `<span>Send</span><span>🚀</span>`;
+      }
+    }
+
+    // --- BLUETOOTH PRINTING (NATIVE BRIDGE) ---
+    async function printBill() {
+      if (!currentTable) return;
+      try {
+        const res = await fetch(`/api/table_bill/${username}/${currentTable}`);
+        if (!res.ok) {
+           showToast("No active orders to print from this table.", true);
+           return;
+        }
+        const data = await res.json();
+        
+        if (window.ReactNativeWebView) {
+           window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'PRINT_RECEIPT',
+              data: data
+           }));
+           showToast("Printing receipt...");
+        } else {
+           showToast("Printer only available in Captain App.", true);
+           console.log("Print Data:", data);
+        }
+      } catch (err) {
+        showToast("Failed to fetch bill.", true);
       }
     }
 

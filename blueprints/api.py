@@ -234,16 +234,62 @@ def settle_table():
         Order.status.notin_(['settled', 'cancelled'])
     ).all()
 
-    for o in orders:
-        o.status = 'settled'
-
+    for order in orders:
+        order.status = 'settled'
     db.session.commit()
-    
+
     user = User.query.get(user_id)
     if user:
-        socketio.emit('table_settled', {'table': table_no}, room=user.username)
+        socketio.emit('table_settled', {'table_no': table_no}, room=user.username)
         
     return jsonify({"success": True, "settled": len(orders)})
+
+
+# ================= FETCH TABLE BILL (FOR POS PRINTING) =================
+@api_bp.route('/api/table_bill/<username>/<table_no>')
+def table_bill(username, table_no):
+    user = User.query.filter_by(username=username.upper()).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    orders = Order.query.filter(
+        Order.user_id == user.id,
+        Order.table_no == table_no,
+        Order.status.notin_(['settled', 'cancelled'])
+    ).all()
+
+    if not orders:
+        return jsonify({"error": "No active orders for this table."}), 404
+
+    items_map = {}
+    total = 0
+
+    for o in orders:
+        for oi in o.order_items:
+            key = oi.item_name
+            if key in items_map:
+                items_map[key]['qty'] += oi.quantity
+                items_map[key]['subtotal'] += (oi.price * oi.quantity)
+            else:
+                items_map[key] = {
+                    'name': oi.item_name,
+                    'qty': oi.quantity,
+                    'price': oi.price,
+                    'subtotal': oi.price * oi.quantity
+                }
+            total += (oi.price * oi.quantity)
+
+    # Convert to list
+    line_items = list(items_map.values())
+
+    return jsonify({
+        "restaurant_name": username.upper(),
+        "address": user.address or "",
+        "table_no": table_no,
+        "date": orders[-1].created_at.strftime("%Y-%m-%d %H:%M"),
+        "items": line_items,
+        "total": total
+    })
 
 
 # ================= KITCHEN PAGE =================
