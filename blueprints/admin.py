@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, session, abort
 from models import db, User, Menu
 from functools import wraps
 from datetime import datetime, timedelta, date
+import re
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -11,7 +12,7 @@ def admin_required(f):
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
             return redirect('/')
-        user = User.query.get(session['user_id'])
+        user = db.session.get(User, session['user_id'])
         if not user or user.is_admin != 1:
             abort(403)
         return f(*args, **kwargs)
@@ -22,22 +23,26 @@ def admin_required(f):
 @admin_required
 def superadmin():
     users = User.query.filter_by(is_admin=0).all()
+    menu_counts = dict(
+        db.session.query(Menu.user_id, db.func.count(Menu.id))
+        .group_by(Menu.user_id)
+        .all()
+    )
 
     user_data = []
     for u in users:
-        menu_count = Menu.query.filter_by(user_id=u.id).count()
         user_data.append({
             "id": u.id,
             "username": u.username,
             "whatsapp": u.whatsapp,
             "expiry": u.expiry,
-            "menu_count": menu_count
+            "menu_count": menu_counts.get(u.id, 0)
         })
 
     return render_template("superadmin.html", users=user_data, today=str(date.today()))
 
 
-@admin_bp.route('/extend/<int:id>')
+@admin_bp.route('/extend/<int:id>', methods=['POST'])
 @admin_required
 def extend(id):
     user = User.query.get_or_404(id)
@@ -60,6 +65,8 @@ def delete_user(id):
 def set_expiry(id):
     if request.method == 'POST':
         expiry = request.form['expiry']
+        if not re.match(r'^\d{4}-\d{2}-\d{2}$', expiry):
+            abort(400, description='Expiry must be in YYYY-MM-DD format.')
         user = User.query.get_or_404(id)
         user.expiry = expiry
         db.session.commit()
@@ -74,8 +81,16 @@ def edit_user(id):
     user = User.query.get_or_404(id)
 
     if request.method == 'POST':
-        user.username = request.form['username']
-        user.whatsapp = request.form['whatsapp']
+        username = request.form['username'].strip().upper()
+        if not re.match(r'^[A-Z0-9_]+$', username):
+            abort(400, description='Username can only contain letters, numbers, and underscores.')
+
+        existing_user = User.query.filter(User.username == username, User.id != user.id).first()
+        if existing_user:
+            abort(400, description='Username already exists.')
+
+        user.username = username
+        user.whatsapp = request.form['whatsapp'].strip()
         db.session.commit()
         return redirect('/superadmin')
 

@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0b0a09">
     <link rel="manifest" href="/static/manifest.json">
-    <link rel="icon" href="/static/logo.png" type="image/png">
+    <link rel="icon" href="/static/uploads/logo.jpg" type="image/jpeg">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -212,13 +212,19 @@
         </div>
 
         <div class="input-group">
-            <input type="text" id="code-input" class="code-input" placeholder="e.g. ATITHI" autocomplete="off"
+            <input type="text" id="code-input" class="code-input" placeholder="e.g. username" autocomplete="off"
                 autofocus>
         </div>
 
         <button class="connect-btn" id="connect-btn" onclick="connect()">
             <span id="btn-text">Connect</span>
             <span>→</span>
+        </button>
+
+        <button class="connect-btn" id="install-btn"
+            style="display: none; margin-top: 12px; background: rgba(255, 255, 255, 0.05); color: #c8873a; border: 1px solid rgba(200, 135, 58, 0.3);"
+            onclick="installApp()">
+            <span style="margin: 0 auto;">⬇ Install Captain App</span>
         </button>
 
         <div class="error-msg" id="error-msg">Restaurant not found. Please check the code.</div>
@@ -241,6 +247,42 @@
         if (saved) {
             // If remembered, go directly
             window.location.href = '/captain/' + saved;
+        }
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('SW registered', reg))
+                    .catch(err => console.error('SW error', err));
+            });
+        }
+
+        // PWA Install Logic
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-btn');
+
+        // Show by default as a fallback
+        if (installBtn) installBtn.style.display = 'flex';
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        async function installApp() {
+            if (deferredPrompt) {
+                // Trigger native browser install prompt
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            } else {
+                // Fallback instructions for iOS or desktop where auto-prompt is blocked
+                alert("To install the Captain App:\n\nAndroid/Chrome: Tap the 3 dots menu (⋮) -> 'Install app' or 'Add to Home screen'\n\niOS/Safari: Tap the Share icon -> 'Add to Home Screen'");
+            }
         }
 
         input.addEventListener('keydown', e => {

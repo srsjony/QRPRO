@@ -63,6 +63,8 @@
 
 <body>
     <form class="card" method="POST">
+        {% include 'flash_messages.html' %}
+        {% include 'csrf_field.html' %}
         <h3>Set Expiry Date</h3>
         <input type="date" name="expiry" required>
         <button>Save</button>

@@ -410,12 +410,14 @@
 
 <body>
 
+  {% if not request.args.get('embedded') %}
   <nav class="nav">
     <span class="nav-brand">{{username}}</span>
     <div class="nav-actions">
       <a class="nav-chip" href="/dashboard">← Dashboard</a>
     </div>
   </nav>
+  {% endif %}
 
   <div class="page">
 
@@ -493,6 +495,7 @@
     </div>
 
   </div>
+  {% include 'embedded_fix.html' %}
   {% include 'sr_footer.html' %}
 </body>
 

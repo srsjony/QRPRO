@@ -33,7 +33,7 @@ def seed_menu(user_id):
 @auth_bp.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username'].strip()
+        username = request.form['username'].strip().upper()
         password = request.form['password']
 
         user = User.query.filter_by(username=username).first()
@@ -66,6 +66,10 @@ def register():
 
         if len(username) < 3:
             flash('Username must be at least 3 characters', 'error')
+            return render_template('login.html', register=True)
+
+        if len(raw_password) < 8:
+            flash('Password must be at least 8 characters', 'error')
             return render_template('login.html', register=True)
 
         # Check duplicate

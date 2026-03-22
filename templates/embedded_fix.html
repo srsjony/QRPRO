@@ -1,0 +1,50 @@
+<!-- Auto-inject embedded=true into all links and forms when inside iframe -->
+<script>
+(function() {
+  // Only run if we're inside an iframe (embedded)
+  if (window.self === window.top) return;
+
+  function addEmbedded(url) {
+    if (!url || url.startsWith('javascript:') || url.startsWith('#') || url.startsWith('mailto:')) return url;
+    // Don't add to external links
+    if (url.startsWith('http') && !url.includes(window.location.host)) return url;
+    // Don't add if already has embedded
+    if (url.includes('embedded=true')) return url;
+    // Add the param
+    const separator = url.includes('?') ? '&' : '?';
+    return url + separator + 'embedded=true';
+  }
+
+  // Patch all links
+  document.querySelectorAll('a[href]').forEach(a => {
+    if (a.target === '_blank') return; // Leave external links alone
+    a.href = addEmbedded(a.href);
+  });
+
+  // Patch all forms
+  document.querySelectorAll('form[action]').forEach(form => {
+    form.action = addEmbedded(form.action);
+  });
+
+  // Also intercept dynamically created links via MutationObserver
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if (node.nodeType !== 1) return;
+        if (node.tagName === 'A' && node.href && node.target !== '_blank') {
+          node.href = addEmbedded(node.href);
+        }
+        if (node.tagName === 'FORM' && node.action) {
+          node.action = addEmbedded(node.action);
+        }
+        // Check children too
+        node.querySelectorAll && node.querySelectorAll('a[href], form[action]').forEach(el => {
+          if (el.tagName === 'A' && el.target !== '_blank') el.href = addEmbedded(el.href);
+          if (el.tagName === 'FORM') el.action = addEmbedded(el.action);
+        });
+      });
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>

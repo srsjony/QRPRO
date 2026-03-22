@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Billing — {{username}}</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -680,12 +681,14 @@
 
 <body>
 
+  {% if not request.args.get('embedded') %}
   <nav class="nav">
     <span class="nav-brand">Billing</span>
     <div style="display:flex;gap:8px">
       <a class="nav-chip" href="/dashboard">← Dashboard</a>
     </div>
   </nav>
+  {% endif %}
 
   <div class="page">
     <div class="page-header">
@@ -784,6 +787,7 @@
     const ADDRESS = "{{ address or '' }}";
     const UPI_QR = "{{ upi_qr or '' }}";
     const REST_NAME = "{{ username }}";
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
 
     let pendingTable = null;
 
@@ -928,7 +932,7 @@
       try {
         const res = await fetch('/api/settle', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
           body: JSON.stringify({ table: tableNo }),
           credentials: 'same-origin'
         });
@@ -1140,6 +1144,7 @@
     }
   </script>
 
+  {% include 'embedded_fix.html' %}
   {% include 'sr_footer.html' %}
 </body>
 

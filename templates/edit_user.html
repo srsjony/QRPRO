@@ -63,6 +63,8 @@
 
 <body>
     <form class="card" method="POST">
+        {% include 'flash_messages.html' %}
+        {% include 'csrf_field.html' %}
         <h3>Edit User</h3>
         <input name="username" value="{{user.username}}" required>
         <input name="whatsapp" value="{{user.whatsapp}}" required>

@@ -6,6 +6,7 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Captain App — {{username}}</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0b0a09">
@@ -494,6 +495,7 @@
   <div id="tables-screen" class="screen active">
     <div class="header">
       <div class="header-title">Select Table</div>
+      <button class="header-btn" onclick="captainLogout()" title="Logout" style="font-size: 18px;">🚪</button>
     </div>
     <div class="table-grid">
       {% for t in table_numbers %}
@@ -526,17 +528,24 @@
     </div>
 
     <div class="menu-list" id="menu-list">
-      {% for item, price, cat, img in data %}
-      <div class="menu-item" data-item="{{ item }}" data-price="{{ price }}" data-cat="{{ cat }}">
-        {% if img %}
-        <img src="/static/uploads/{{ img }}" class="mi-img" alt="{{ item }}"
-          onerror="this.src='/static/uploads/defult-food.jpg'">
+      {% for menu_item in data %}
+      <div class="menu-item" data-id="{{ menu_item.id }}" data-item="{{ menu_item.item }}" data-price="{{ menu_item.price }}" data-cat="{{ menu_item.category }}" data-stock="{{ menu_item.stock }}" data-available="{{ menu_item.available }}">
+        {% if menu_item.image %}
+        <img src="/static/uploads/{{ menu_item.image }}" class="mi-img" alt="{{ menu_item.item }}"
+          onerror="this.src=`data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c8873a'%3E%3Cpath d='M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z'/%3E%3C/svg%3E`">
         {% else %}
-        <img src="/static/uploads/defult-food.jpg" class="mi-img" alt="{{ item }}">
+        <img
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c8873a'%3E%3Cpath d='M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z'/%3E%3C/svg%3E"
+          class="mi-img" alt="{{ menu_item.item }}">
         {% endif %}
         <div class="mi-info">
-          <div class="mi-name">{{ item }}</div>
-          <div class="mi-price">₹{{ price }}</div>
+          <div class="mi-name">{{ menu_item.item }}</div>
+          <div class="mi-price">₹{{ menu_item.price }}</div>
+          {% if menu_item.available == 0 or menu_item.stock == 0 %}
+          <div style="font-size:12px; color:#ef4444;">Out of stock</div>
+          {% elif menu_item.stock != -1 %}
+          <div style="font-size:12px; color:var(--muted);">{{ menu_item.stock }} left</div>
+          {% endif %}
         </div>
         <div class="mi-qty-ctrl">
           <button class="mi-btn btn-minus">−</button>
@@ -564,8 +573,9 @@
   <script>
     // --- STATE ---
     const username = "{{ username }}";
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
     let currentTable = null;
-    let cart = {}; // { "Item Name": { price: 100, qty: 2 } }
+    let cart = {}; // { "12": { id: 12, name: "Soup", price: 100, qty: 2 } }
     let currentCategory = 'All';
 
     // --- NAV ---
@@ -576,6 +586,11 @@
       document.getElementById(id).classList.add('active');
       // Visited state for backdrop
       if (id === 'order-screen') document.getElementById('tables-screen').classList.add('visited');
+    }
+
+    function captainLogout() {
+      localStorage.removeItem('captain_restaurant');
+      window.location.href = '/captain';
     }
 
 
@@ -626,19 +641,35 @@
     }
 
     document.querySelectorAll('.menu-item').forEach(itemEl => {
+      const itemId = itemEl.dataset.id;
       const itemName = itemEl.dataset.item;
       const price = parseFloat(itemEl.dataset.price);
+      const stock = parseInt(itemEl.dataset.stock, 10);
+      const available = parseInt(itemEl.dataset.available, 10);
 
       itemEl.querySelector('.btn-minus').addEventListener('click', () => {
-        if (!cart[itemName]) return;
-        cart[itemName].qty -= 1;
-        if (cart[itemName].qty <= 0) delete cart[itemName];
+        if (!cart[itemId]) return;
+        cart[itemId].qty -= 1;
+        if (cart[itemId].qty <= 0) delete cart[itemId];
         updateUI();
       });
 
       itemEl.querySelector('.btn-plus').addEventListener('click', () => {
-        if (!cart[itemName]) cart[itemName] = { price: price, qty: 0 };
-        cart[itemName].qty += 1;
+        if (available === 0 || stock === 0) {
+          showToast("This item is out of stock.", true);
+          return;
+        }
+
+        if (!cart[itemId]) {
+          cart[itemId] = { id: parseInt(itemId, 10), name: itemName, price: price, qty: 0 };
+        }
+
+        if (stock !== -1 && cart[itemId].qty >= stock) {
+          showToast(`Only ${stock} left for ${itemName}.`, true);
+          return;
+        }
+
+        cart[itemId].qty += 1;
         updateUI();
       });
     });
@@ -649,13 +680,13 @@
 
       // reset and recalculate
       document.querySelectorAll('.menu-item').forEach(itemEl => {
-        const itemName = itemEl.dataset.item;
+        const itemId = itemEl.dataset.id;
         const valEl = itemEl.querySelector('.mi-val');
 
-        if (cart[itemName]) {
-          valEl.textContent = cart[itemName].qty;
-          count += cart[itemName].qty;
-          total += cart[itemName].qty * cart[itemName].price;
+        if (cart[itemId]) {
+          valEl.textContent = cart[itemId].qty;
+          count += cart[itemId].qty;
+          total += cart[itemId].qty * cart[itemId].price;
         } else {
           valEl.textContent = '0';
         }
@@ -688,10 +719,7 @@
       const btn = document.getElementById('send-btn');
       if (btn.disabled) return;
 
-      const items = [];
-      for (let item in cart) {
-        items.push({ name: item, price: cart[item].price, qty: cart[item].qty });
-      }
+      const items = Object.values(cart).map(item => ({ id: item.id, qty: item.qty }));
 
       if (items.length === 0) return;
       const notes = document.getElementById('captainNotes').value.trim();
@@ -702,7 +730,7 @@
       try {
         const res = await fetch('/api/order', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
           body: JSON.stringify({
             username: username,
             table: currentTable, /* Removed "Table " prefix since it matches table-no in Kitchen now */
@@ -710,6 +738,7 @@
             items: items
           })
         });
+        const data = await res.json().catch(() => ({}));
 
         if (res.ok) {
           showToast("Order sent to kitchen!");
@@ -717,7 +746,7 @@
           document.getElementById('captainNotes').value = '';
           setTimeout(goBackToTables, 1000);
         } else {
-          showToast("Failed to send order.", true);
+          showToast(data.error || "Failed to send order.", true);
         }
       } catch (e) {
         showToast("Network error.", true);

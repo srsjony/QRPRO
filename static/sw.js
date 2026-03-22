@@ -1,7 +1,7 @@
-const CACHE_NAME = 'qr-menu-v1';
+const CACHE_NAME = 'qr-menu-v2';
 const STATIC_ASSETS = [
-  '/static/logo.png',
-  '/static/uploads/defult-food.jpg',
+  '/static/uploads/logo.jpg',
+  '/static/manifest.json',
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap'
 ];
 
@@ -38,15 +38,15 @@ self.addEventListener('fetch', event => {
 
   // API calls — network only
   if (url.pathname.startsWith('/api/') ||
-      url.pathname.startsWith('/kitchen_orders/') ||
-      url.pathname.startsWith('/update_order/')) {
+    url.pathname.startsWith('/kitchen_orders/') ||
+    url.pathname.startsWith('/update_order/')) {
     return;
   }
 
   // Static assets — cache first
   if (url.pathname.startsWith('/static/') ||
-      url.hostname === 'fonts.googleapis.com' ||
-      url.hostname === 'fonts.gstatic.com') {
+    url.hostname === 'fonts.googleapis.com' ||
+    url.hostname === 'fonts.gstatic.com') {
     event.respondWith(
       caches.match(event.request).then(cached => {
         if (cached) return cached;

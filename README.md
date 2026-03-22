@@ -19,7 +19,11 @@ A comprehensive restaurant QR menu management system built with Flask.
    ```bash
    pip install -r requirements.txt
    ```
-3. Run the application:
+3. Apply database migrations:
+   ```bash
+   flask --app app:create_app db upgrade
+   ```
+4. Run the application:
    ```bash
    python app.py
    ```
@@ -37,7 +41,7 @@ git push heroku main
 ### Render Deployment
 - Create a new Web Service
 - Build Command: `pip install -r requirements.txt`
-- Start Command: `gunicorn app:app`
+- Start Command: `flask --app app:create_app db upgrade && gunicorn app:app`
 
 ## Usage
 

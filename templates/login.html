@@ -487,7 +487,10 @@
       <div class="error-msg">⚠ {{error}}</div>
       {% endif %}
 
+      {% include 'flash_messages.html' %}
+
       <form method="POST">
+        {% include 'csrf_field.html' %}
         <div class="field">
           <label>Username</label>
           <input name="username" placeholder="your_restaurant" required autocomplete="username">

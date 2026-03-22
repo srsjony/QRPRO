@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, date, timedelta
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -35,6 +35,9 @@ class Menu(db.Model):
     category = db.Column(db.String(100))
     image = db.Column(db.String(200))
     available = db.Column(db.Integer, default=1)  # 1=available, 0=out of stock
+    stock = db.Column(db.Integer, default=-1)     # -1 = unlimited
+    daily_limit = db.Column(db.Integer, default=-1) # -1 = no auto-reset
+    last_reset_date = db.Column(db.String(20))    # YYYY-MM-DD
 
 
 class Order(db.Model):

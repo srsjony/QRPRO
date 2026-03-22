@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>{{username}} — Menu</title>
   <meta name="description" content="Browse the menu of {{username}}. Order your favorite dishes directly via WhatsApp.">
+  <meta name="csrf-token" content="{{ csrf_token }}">
 
   <!-- Open Graph / Social -->
   <meta property="og:type" content="website">
@@ -60,31 +61,31 @@
    LIGHT THEME
 ═══════════════════════════════════════════ */
     [data-theme="light"] {
-      --obsidian: #f8f6f3;
-      --coal: #ffffff;
-      --ash: #f0ece7;
+      --obsidian: #eae6e0;
+      --coal: #f0ece7;
+      --ash: #e4dfd8;
       --ember: #b87a2e;
       --ember-glow: #9a6520;
       --ember-dim: #c49a5c;
-      --cream: #1a1714;
+      --cream: #2c2520;
       --cream-muted: #6b6158;
-      --divider: rgba(140, 100, 40, 0.18);
-      --card-bg: #ffffff;
+      --divider: rgba(140, 100, 40, 0.15);
+      --card-bg: #f0ece7;
     }
 
     [data-theme="light"] .nav {
-      background: rgba(248, 246, 243, 0.92);
+      background: rgba(234, 230, 224, 0.94);
     }
 
     [data-theme="light"] .table-strip {
-      background: rgba(240, 236, 231, 0.95);
+      background: rgba(228, 223, 216, 0.95);
     }
 
     [data-theme="light"] .hero-overlay {
       background: linear-gradient(to top,
-          rgba(248, 246, 243, 0.96) 0%,
-          rgba(248, 246, 243, 0.45) 55%,
-          rgba(248, 246, 243, 0.1) 100%);
+          rgba(234, 230, 224, 0.85) 0%,
+          rgba(234, 230, 224, 0.2) 45%,
+          rgba(234, 230, 224, 0.0) 100%);
     }
 
     [data-theme="light"] .backdrop {
@@ -122,16 +123,16 @@
     }
 
     [data-preset="modern"][data-theme="light"] {
-      --obsidian: #ffffff;
-      --coal: #f9fafb;
-      --ash: #f3f4f6;
+      --obsidian: #e8eaed;
+      --coal: #eff1f3;
+      --ash: #dfe2e6;
       --ember: #2563eb;
       --ember-glow: #3b82f6;
       --ember-dim: #1d4ed8;
-      --cream: #111827;
+      --cream: #1a1f2b;
       --cream-muted: #6b7280;
       --divider: rgba(0, 0, 0, 0.08);
-      --card-bg: #ffffff;
+      --card-bg: #eff1f3;
     }
 
     /* ═══════════════════════════════════════════
@@ -165,17 +166,17 @@
     }
 
     [data-preset="playful"][data-theme="light"] {
-      --obsidian: #fdfcf7;
-      /* warm off-white */
-      --coal: #ffffff;
-      --ash: #f4f1e1;
+      --obsidian: #e8e5d8;
+      /* warm sand */
+      --coal: #f0ece0;
+      --ash: #e0dccf;
       --ember: #f06b43;
       --ember-glow: #fa815c;
       --ember-dim: #d9562e;
       --cream: #1c2e25;
       --cream-muted: #507060;
       --divider: rgba(240, 107, 67, 0.15);
-      --card-bg: #ffffff;
+      --card-bg: #f0ece0;
     }
 
     /* ═══════════════════════════════════════════
@@ -1606,18 +1607,19 @@
 
   <!-- MENU GRID -->
   <div class="menu-grid" id="menuGrid">
-    {% for item, price, cat, img in data %}
-    <div class="menu-card" data-cat="{{cat}}" data-name="{{ item | lower }}"
+    {% for menu_item in data %}
+    <div class="menu-card" data-id="{{ menu_item.id }}" data-cat="{{ menu_item.category }}" data-name="{{ menu_item.item | lower }}" data-stock="{{ menu_item.stock }}" data-available="{{ menu_item.available }}"
       style="animation-delay:{{ loop.index0 * 0.045 }}s">
 
       <div class="card-img-wrap shimmer">
-        {% if img %}
-        <img class="card-img" src="{{ url_for('static', filename='uploads/' + img) }}" alt="{{item}}" loading="lazy"
+        {% if menu_item.image %}
+        <img class="card-img" src="{{ url_for('static', filename='uploads/' + menu_item.image) }}" alt="{{menu_item.item}}" loading="lazy"
           onload="this.parentElement.classList.remove('shimmer')"
           onerror="this.parentElement.classList.remove('shimmer')">
         {% else %}
-        <img class="card-img" src="/static/uploads/defult-food.jpg" alt="{{item}}" loading="lazy"
-          onload="this.parentElement.classList.remove('shimmer')"
+        <img class="card-img"
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c8873a'%3E%3Cpath d='M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z'/%3E%3C/svg%3E"
+          alt="{{menu_item.item}}" loading="lazy" onload="this.parentElement.classList.remove('shimmer')"
           onerror="this.parentElement.classList.remove('shimmer');this.parentElement.innerHTML='<div class=\'card-img-placeholder\'>🍽</div>'">
         {% endif %}
       </div>
@@ -1625,20 +1627,27 @@
       <div class="card-body">
         <div class="card-meta">
           <div>
-            <div class="card-name">{{item}}</div>
-            <div class="card-cat">{{cat}}</div>
+            <div class="card-name">
+              {{menu_item.item}}
+              {% if menu_item.available == 0 or menu_item.stock == 0 %}
+                <span class="oos-badge" style="display: inline-block; font-size: 10px; font-weight: 600; text-transform: uppercase; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 2px 6px; border-radius: 999px; margin-left: 6px;">Out of Stock</span>
+              {% elif menu_item.stock != -1 %}
+                <span class="oos-badge" style="display: inline-block; font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--ember-glow); background: rgba(200, 135, 58, 0.1); padding: 2px 6px; border-radius: 999px; margin-left: 6px;">{{menu_item.stock}} Left</span>
+              {% endif %}
+            </div>
+            <div class="card-cat">{{menu_item.category}}</div>
           </div>
-          <div class="card-price">₹{{price}}</div>
+          <div class="card-price">₹{{menu_item.price}}</div>
         </div>
 
-        <div class="add-btn-wrap" data-item-name="{{item}}">
+        <div class="add-btn-wrap" data-item-id="{{menu_item.id}}" data-item-name="{{menu_item.item}}">
           <button class="add-btn" onclick="addToCart(this)">
             <span class="btn-text">Add to Cart</span>
           </button>
         </div>
 
-        <input type="hidden" class="item-name" value="{{item}}">
-        <input type="hidden" class="item-price" value="{{price}}">
+        <input type="hidden" class="item-name" value="{{menu_item.item}}">
+        <input type="hidden" class="item-price" value="{{menu_item.price}}">
       </div>
     </div>
     {% endfor %}
@@ -1709,9 +1718,10 @@
     // ── CONSTANTS ─────────────────────────────────────
     const CART_KEY = 'qr_cart_{{username}}';
     const THEME_KEY = 'qr_theme_{{username}}';
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
 
     // ── STATE ─────────────────────────────────────────
-    let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+    let cart = normalizeStoredCart(JSON.parse(localStorage.getItem(CART_KEY) || '[]'));
     let selectedTable = '';
 
     // ── THEME ─────────────────────────────────────────
@@ -1738,16 +1748,61 @@
     initTheme();
 
     // ── TOAST ─────────────────────────────────────────
-    function showToast(itemName) {
+    function showToast(message, mode = 'item') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
       toast.className = 'toast-snack';
-      toast.innerHTML = `<span class="toast-icon">✓</span> ${itemName} added`;
+      toast.innerHTML = mode === 'item'
+        ? `<span class="toast-icon">✓</span> ${message} added`
+        : message;
       container.appendChild(toast);
       setTimeout(() => {
         toast.classList.add('toast-out');
         setTimeout(() => toast.remove(), 250);
       }, 2000);
+    }
+
+    function normalizeStoredCart(rawCart) {
+      if (!Array.isArray(rawCart)) return [];
+
+      const menuLookup = new Map(
+        Array.from(document.querySelectorAll('.menu-card')).map(card => {
+          const name = card.querySelector('.item-name').value;
+          return [name.toLowerCase(), {
+            id: parseInt(card.dataset.id, 10),
+            name,
+            price: Number(card.querySelector('.item-price').value),
+          }];
+        })
+      );
+
+      return rawCart.map(item => {
+        const qty = parseInt(item.qty, 10);
+        if (!Number.isInteger(qty) || qty <= 0) return null;
+
+        const directId = parseInt(item.id, 10);
+        if (Number.isInteger(directId)) {
+          const card = document.querySelector(`.menu-card[data-id="${directId}"]`);
+          if (!card) return null;
+          return {
+            id: directId,
+            name: card.querySelector('.item-name').value,
+            price: Number(card.querySelector('.item-price').value),
+            qty,
+          };
+        }
+
+        const match = menuLookup.get(String(item.name || '').toLowerCase());
+        return match ? { ...match, qty } : null;
+      }).filter(Boolean);
+    }
+
+    function getCardByItemId(itemId) {
+      return document.querySelector(`.menu-card[data-id="${itemId}"]`);
+    }
+
+    function buildOrderItems() {
+      return cart.map(item => ({ id: item.id, qty: item.qty }));
     }
 
     // ── SAVE CART ─────────────────────────────────────
@@ -1796,10 +1851,27 @@
     function addToCart(btn) {
       if (navigator.vibrate) navigator.vibrate(40);
       const card = btn.closest('.menu-card');
+      const itemId = parseInt(card.dataset.id, 10);
       const name = card.querySelector('.item-name').value;
-      const price = parseInt(card.querySelector('.item-price').value);
-      const found = cart.find(i => i.name === name);
-      if (found) found.qty++; else cart.push({ name, price, qty: 1 });
+      const price = Number(card.querySelector('.item-price').value);
+      const stock = parseInt(card.dataset.stock);
+      const available = parseInt(card.dataset.available);
+
+      if (available === 0 || stock === 0) {
+        alert('This item is currently out of stock.');
+        return;
+      }
+
+      const found = cart.find(i => i.id === itemId);
+      if (found) {
+        if (stock !== -1 && found.qty >= stock) {
+          alert(`You can only order up to ${stock} of this item.`);
+          return;
+        }
+        found.qty++;
+      } else {
+        cart.push({ id: itemId, name, price, qty: 1 });
+      }
 
       const fab = document.getElementById('cartFab');
       fab.classList.remove('bounce');
@@ -1812,10 +1884,22 @@
       updateCardButtons();
     }
 
-    function cardChangeQty(name, delta) {
+    function cardChangeQty(itemId, delta) {
       if (navigator.vibrate) navigator.vibrate(25);
-      const found = cart.find(i => i.name === name);
+      const found = cart.find(i => i.id === itemId);
       if (!found) return;
+
+      if (delta > 0) {
+        const card = getCardByItemId(itemId);
+        if (card) {
+          const stock = parseInt(card.dataset.stock);
+          if (stock !== -1 && found.qty >= stock) {
+            alert(`You can only order up to ${stock} of this item.`);
+            return;
+          }
+        }
+      }
+
       found.qty += delta;
       if (found.qty <= 0) {
         cart.splice(cart.indexOf(found), 1);
@@ -1827,8 +1911,21 @@
 
     function changeQty(i, d) {
       if (navigator.vibrate) navigator.vibrate(25);
-      cart[i].qty += d;
-      if (cart[i].qty <= 0) cart.splice(i, 1);
+      
+      const item = cart[i];
+      if (d > 0) {
+        const card = getCardByItemId(item.id);
+        if (card) {
+          const stock = parseInt(card.dataset.stock);
+          if (stock !== -1 && item.qty >= stock) {
+            alert(`You can only order up to ${stock} of this item.`);
+            return;
+          }
+        }
+      }
+
+      item.qty += d;
+      if (item.qty <= 0) cart.splice(i, 1);
       saveCart();
       renderCart();
       updateCardButtons();
@@ -1844,16 +1941,17 @@
 
     function updateCardButtons() {
       document.querySelectorAll('.add-btn-wrap').forEach(wrap => {
-        const name = wrap.dataset.itemName;
-        const item = cart.find(i => i.name === name);
+        const itemId = parseInt(wrap.dataset.itemId, 10);
+        const itemName = wrap.dataset.itemName;
+        const item = cart.find(i => i.id === itemId);
         if (item && item.qty > 0) {
           wrap.innerHTML = `<div class="card-qty-row">
-        <button class="cq-btn" onclick="cardChangeQty('${name.replace(/'/g, "\\'")}', -1)">−</button>
+        <button class="cq-btn" onclick="cardChangeQty(${itemId}, -1)">−</button>
         <div style="text-align:center">
           <div class="cq-val">${item.qty}</div>
           <div class="cq-label">in cart</div>
         </div>
-        <button class="cq-btn" onclick="cardChangeQty('${name.replace(/'/g, "\\'")}', 1)">+</button>
+        <button class="cq-btn" onclick="cardChangeQty(${itemId}, 1)">+</button>
       </div>`;
         } else {
           wrap.innerHTML = `<button class="add-btn" onclick="addToCart(this)">
@@ -1984,23 +2082,24 @@
       try {
         const res = await fetch('/api/order', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
           body: JSON.stringify({
             username: '{{username}}',
             table: selectedTable,
             notes: notes,
-            items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty }))
+            items: buildOrderItems()
           })
         });
+        const data = await res.json().catch(() => ({}));
         if (res.ok) {
-          showToast('Order placed! Table ' + selectedTable + ' — ₹' + sum);
+          showToast(`Order placed! Table ${selectedTable} - Rs ${sum}`, 'message');
           cart = [];
           document.getElementById('orderNotes').value = '';
           saveCart();
           renderCart();
           updateCardButtons();
         } else {
-          alert('Order failed. Try again.');
+          alert(data.error || 'Order failed. Try again.');
         }
       } catch (e) {
         alert('Network error. Check connection.');
@@ -2019,12 +2118,12 @@
       try {
         await fetch('/api/order', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
           body: JSON.stringify({
             username: '{{username}}',
             table: selectedTable,
             notes: notes,
-            items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty }))
+            items: buildOrderItems()
           })
         });
       } catch (e) { console.warn('Order log failed:', e); }

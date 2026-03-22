@@ -1,7 +1,11 @@
+import subprocess
+import sys
+
 from app import app
 from flaskwebgui import FlaskUI
 
 if __name__ == '__main__':
+    subprocess.run([sys.executable, "-m", "flask", "--app", "app:create_app", "db", "upgrade"], check=True)
     # Wrap the existing Flask app inside a native OS window
     FlaskUI(
         app=app,

@@ -1,12 +1,24 @@
-import sqlite3
+import subprocess
+import sys
 
-conn = sqlite3.connect('database.db')
-c = conn.cursor()
+from werkzeug.security import generate_password_hash
 
-c.execute("INSERT INTO users (username,password,is_admin) VALUES (?,?,1)",
-          ("admin","admin123"))
+from app import app
+from models import db, User
 
-conn.commit()
-conn.close()
 
-print("Admin created successfully")
+subprocess.run([sys.executable, "-m", "flask", "--app", "app:create_app", "db", "upgrade"], check=True)
+
+with app.app_context():
+    existing_admin = User.query.filter_by(username="ADMIN").first()
+    if existing_admin:
+        print("Admin user already exists.")
+    else:
+        admin = User(
+            username="ADMIN",
+            password=generate_password_hash("admin12345"),
+            is_admin=1,
+        )
+        db.session.add(admin)
+        db.session.commit()
+        print("Admin created successfully with username ADMIN and password admin12345")

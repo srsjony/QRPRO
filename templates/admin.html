@@ -86,8 +86,10 @@
 
     <div class="card">
         <h2>Add Menu Item</h2>
+        {% include 'flash_messages.html' %}
 
         <form method="POST">
+            {% include 'csrf_field.html' %}
             <label>Restaurant Name</label>
             <input name="restaurant" required>
 

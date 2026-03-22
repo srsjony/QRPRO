@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kitchen — {{username}}</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -651,7 +652,7 @@
       </div>
     </div>
     <div class="header-right">
-      <button id="btnSound" class="btn-sound" onclick="initAudio()">🔇 Enable Sound</button>
+      <button id="btnSound" class="btn-sound enabled" onclick="toggleSound()">🔊 Sound On</button>
       <button class="filter-btn active" data-filter="active" onclick="setFilter('active',this)">Active</button>
       <button class="filter-btn" data-filter="all" onclick="setFilter('all',this)">All</button>
       <div class="clock" id="clock">00:00:00</div>
@@ -687,9 +688,14 @@
   <!-- TOAST NOTIFICATIONS -->
   <div class="toast-wrap" id="toastWrap"></div>
 
+  <!-- SOCKET.IO -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+  <div class="toast-wrap" id="toastWrap"></div>
+
   <!-- NOTIFICATION AUDIO (silent oscillator — no external file needed) -->
   <script>
     const RESTAURANT = '{{username}}';
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
     let orders = {};
     let knownIds = new Set();
     let currentFilter = 'active';
@@ -706,8 +712,9 @@
     setInterval(tickClock, 1000);
 
     let audioCtx = null;
-    let soundEnabled = false;
+    let soundEnabled = true;
 
+    // Auto-enable sound on first user interaction (required by browsers)
     function initAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -719,9 +726,29 @@
       const btn = document.getElementById('btnSound');
       btn.textContent = '🔊 Sound On';
       btn.classList.add('enabled');
-      // Play a test ping to confirm
-      ping();
     }
+
+    function toggleSound() {
+      if (!audioCtx) {
+        initAudio();
+        return;
+      }
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('btnSound');
+      if (soundEnabled) {
+        btn.textContent = '🔊 Sound On';
+        btn.classList.add('enabled');
+      } else {
+        btn.textContent = '🔇 Sound Off';
+        btn.classList.remove('enabled');
+      }
+    }
+
+    // Auto-init audio on first click/touch anywhere on the page
+    document.addEventListener('click', function autoInit() {
+      initAudio();
+      document.removeEventListener('click', autoInit);
+    }, { once: true });
 
     // ── AUDIO PING ────────────────────────────
     function ping() {
@@ -791,7 +818,7 @@
 
       const r = await fetch(`/update_order/${id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
         body: JSON.stringify({ status })
       });
       if (r.ok) {
@@ -953,10 +980,32 @@
 
     // ── INIT ──────────────────────────────────
     fetchOrders();
-    setInterval(fetchOrders, 5000);   // poll every 5s
+
+    const socket = io();
+    
+    socket.on("connect", () => {
+        socket.emit("join", { username: RESTAURANT });
+        const dot = document.getElementById("connDot");
+        const lbl = document.getElementById("connLabel");
+        dot.classList.remove("offline");
+        lbl.textContent = "Live";
+    });
+
+    socket.on("disconnect", () => {
+        const dot = document.getElementById("connDot");
+        const lbl = document.getElementById("connLabel");
+        dot.classList.add("offline");
+        lbl.textContent = "Reconnecting…";
+    });
+
+    socket.on("new_order", () => { fetchOrders(); });
+    socket.on("order_updated", () => { fetchOrders(); });
+    socket.on("table_settled", () => { fetchOrders(); });
+
     setInterval(updateTimers, 10000); // update timers every 10s
   </script>
 
+  {% include 'embedded_fix.html' %}
   {% include 'sr_footer.html' %}
 </body>
 

@@ -190,6 +190,7 @@
         <a href="/logout"><button
                 style="background: var(--danger); color: white; padding: 8px 16px; font-size: 14px;">Logout</button></a>
     </div>
+    {% include 'flash_messages.html' %}
     <div class="card">
         <div class="table-wrap">
             <table>
@@ -227,6 +228,7 @@
                         <div class="actions">
                             <form method="POST" action="/delete_user/{{u.id}}" style="display:inline"
                                 onsubmit="return confirm('Delete {{u.username}}?')">
+                                {% include 'csrf_field.html' %}
                                 <button class="btn-delete" type="submit">Delete</button>
                             </form>
                             <a href="/qr/{{u.username}}" target="_blank"><button class="btn-qr">Preview</button></a>

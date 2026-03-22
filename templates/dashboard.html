@@ -633,6 +633,7 @@
 <body>
 
   <!-- NAV -->
+  {% if not request.args.get('embedded') %}
   <nav class="nav">
     <span class="nav-brand">{{username}}</span>
     <div class="nav-actions">
@@ -642,6 +643,7 @@
       <a class="nav-chip danger" href="/logout">Logout</a>
     </div>
   </nav>
+  {% endif %}
 
   <div class="page">
 
@@ -675,7 +677,7 @@
       <div class="ql-title">Core Operations</div>
       <div class="quick-links">
         <a class="qlink" href="/menu/{{username}}" target="_blank">📱 Customer Menu</a>
-        <a class="qlink" href="/static/captain.apk" download>👔 Download Captain APK</a>
+        <a class="qlink" href="/inventory">📦 Inventory</a>
         <a class="qlink" href="/kitchen/{{username}}" target="_blank">🍳 Kitchen</a>
         <a class="qlink" href="/billing">💰 Billing</a>
         <a class="qlink" href="/orders">📊 Order History</a>
@@ -691,6 +693,8 @@
 
     </div>
 
+    {% include 'flash_messages.html' %}
+
     <!-- RESTAURANT SETTINGS -->
     <div class="section-head" style="animation-delay:0.1s" onclick="toggleSection('settings-sec', this)">
       <div class="section-head-left">
@@ -703,6 +707,7 @@
       <div class="collapsible-content">
         <div class="card">
           <form method="POST" action="/update_restaurant" enctype="multipart/form-data">
+            {% include 'csrf_field.html' %}
             <div class="form-grid">
               <div class="field" style="grid-column:1/-1">
                 <label>Restaurant Address</label>
@@ -790,111 +795,6 @@
       </div>
     </div>
 
-    <!-- BULK UPLOAD -->
-    <div class="section-head collapsed" style="animation-delay:0.18s" onclick="toggleSection('bulk-sec', this)">
-      <div class="section-head-left">
-        <span class="section-icon">📊</span>
-        <span class="section-title">Bulk Upload via Excel</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="collapsible-wrapper collapsed" id="bulk-sec" style="animation-delay:0.22s">
-      <div class="collapsible-content">
-        <div class="card">
-          <div class="upload-box">
-            <form action="/upload_excel" method="POST" enctype="multipart/form-data">
-              <input type="file" name="file" accept=".xlsx,.xls" required>
-              <p>Format: columns named <strong>item</strong> | <strong>price</strong> | <strong>category</strong></p>
-              <button type="submit" class="btn btn-primary" style="margin-top:14px">Upload Excel</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ADD ITEM -->
-    <div class="section-head collapsed" style="animation-delay:0.24s" onclick="toggleSection('add-sec', this)">
-      <div class="section-head-left">
-        <span class="section-icon">➕</span>
-        <span class="section-title">Add Menu Item</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="collapsible-wrapper collapsed" id="add-sec" style="animation-delay:0.28s">
-      <div class="collapsible-content">
-        <div class="card">
-          <form method="POST" enctype="multipart/form-data">
-            <div class="form-grid">
-              <div class="field">
-                <label>Item Name</label>
-                <input type="text" name="item" placeholder="e.g. Chicken Biryani" required>
-              </div>
-              <div class="field">
-                <label>Price (₹)</label>
-                <input type="text" name="price" placeholder="e.g. 250" required>
-              </div>
-              <div class="field">
-                <label>Category</label>
-                <input type="text" name="category" placeholder="e.g. Main Course" required>
-              </div>
-              <div class="field" style="grid-column:1/-1">
-                <label>Item Image (Optional)</label>
-                <input type="file" name="image" accept="image/png,image/jpeg,image/jpg">
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Add Item</button>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- MENU LIST -->
-    <div class="section-head" style="animation-delay:0.3s" onclick="toggleSection('menu-sec', this)">
-      <div class="section-head-left">
-        <span class="section-icon">🍽</span>
-        <span class="section-title">Your Menu ({{data|length}} items)</span>
-      </div>
-      <span class="section-toggle">▼</span>
-    </div>
-    <div class="collapsible-wrapper" id="menu-sec" style="animation-delay:0.34s">
-      <div class="collapsible-content">
-        <div class="card" style="padding: 16px 24px;">
-          {% if data %}
-          <div class="menu-list">
-            {% for d in data %}
-            <div class="menu-row {% if not d[5] %}unavailable{% endif %}"
-              style="animation-delay:{{ loop.index0 * 0.03 }}s">
-              <img class="menu-img" src="/static/uploads/{{d[4] if d[4] else 'default.jpg'}}" alt="{{d[1]}}"
-                onerror="this.src='/static/uploads/defult-food.jpg'">
-              <div class="menu-info">
-                <div class="menu-name">{{d[1]}} {% if not d[5] %}<span class="oos-badge">Out of Stock</span>{% endif %}
-                </div>
-                <div class="menu-meta">
-                  <span class="menu-price">₹{{d[2]}}</span>
-                  <span class="menu-cat">{{d[3]}}</span>
-                </div>
-              </div>
-              <div class="menu-actions">
-                <form method="POST" action="/toggle_available/{{d[0]}}" style="display:inline">
-                  <button type="submit" class="action-link stock {% if not d[5] %}out{% endif %}">{% if d[5] %}In
-                    Stock{% else %}Restock{% endif %}</button>
-                </form>
-                <a class="action-link edit" href="/edit/{{d[0]}}">Edit</a>
-                <a class="action-link del" href="/delete/{{d[0]}}"
-                  onclick="return confirm('Delete {{d[1]}}?')">Delete</a>
-              </div>
-            </div>
-            {% endfor %}
-          </div>
-          {% else %}
-          <div class="empty-state">
-            <div class="es-icon">🍽</div>
-            <p>No items yet — add your first dish above!</p>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
 
   </div>
 
@@ -906,6 +806,7 @@
     }
   </script>
 
+  {% include 'embedded_fix.html' %}
   {% include 'sr_footer.html' %}
 </body>
 

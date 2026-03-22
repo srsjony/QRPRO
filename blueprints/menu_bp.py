@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, session, send_file, abort
+from flask import Blueprint, render_template, request, redirect, session, send_file, abort, flash
 from models import db, User, Menu, Order, OrderItem
-from werkzeug.utils import secure_filename
 from functools import wraps
 from datetime import date
 from config import Config
+from pricing import normalize_price
+from uploads import save_uploaded_image
 import os
 import io
 import pandas as pd
@@ -15,44 +16,7 @@ from reportlab.lib.colors import HexColor
 from reportlab.lib.utils import ImageReader
 
 menu_bp = Blueprint('menu', __name__)
-
-MAX_IMAGE_WIDTH = 800
-JPEG_QUALITY = 85
-
-
-def compress_image(filepath):
-    """Resize and compress an uploaded image to save space and bandwidth."""
-    try:
-        img = Image.open(filepath)
-        if img.mode in ('RGBA', 'P'):
-            img = img.convert('RGB')
-
-        # Resize if wider than MAX_IMAGE_WIDTH
-        if img.width > MAX_IMAGE_WIDTH:
-            ratio = MAX_IMAGE_WIDTH / img.width
-            new_size = (MAX_IMAGE_WIDTH, int(img.height * ratio))
-            img = img.resize(new_size, Image.LANCZOS)
-
-        # Save as compressed JPEG
-        base, _ = os.path.splitext(filepath)
-        jpeg_path = base + '.jpg'
-        img.save(jpeg_path, 'JPEG', quality=JPEG_QUALITY, optimize=True)
-
-        # Remove original if it was a different format
-        if filepath != jpeg_path and os.path.exists(filepath):
-            os.remove(filepath)
-
-        return os.path.basename(jpeg_path)
-    except Exception:
-        return os.path.basename(filepath)
-
-
-def save_and_compress(file):
-    """Save an uploaded file and compress it."""
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(Config.UPLOAD_FOLDER, filename)
-    file.save(filepath)
-    return compress_image(filepath)
+ALLOWED_THEME_PRESETS = {'default', 'modern', 'playful'}
 
 
 def login_required(f):
@@ -82,25 +46,140 @@ def parse_table_numbers(raw_value):
     return normalize_table_numbers(raw_value).split(",")
 
 
-# ================= DASHBOARD =================
-@menu_bp.route('/dashboard', methods=['GET', 'POST'])
-@login_required
-def dashboard():
-    if request.method == 'POST':
-        item = request.form['item'].strip()
-        price = request.form['price'].strip()
-        category = request.form['category'].strip()
-        file = request.files.get('image')
-        filename = ""
-        if file and file.filename != "":
-            filename = save_and_compress(file)
+def normalize_theme_preset(raw_value):
+    preset = (raw_value or 'default').strip().lower()
+    return preset if preset in ALLOWED_THEME_PRESETS else 'default'
 
-        db.session.add(Menu(user_id=session['user_id'], item=item,
-                            price=price, category=category, image=filename))
+
+def parse_optional_non_negative_int(raw_value, field_name):
+    value = (raw_value or '').strip()
+    if not value:
+        return None
+
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a whole number.") from exc
+
+    if parsed < 0:
+        raise ValueError(f"{field_name} cannot be negative.")
+
+    return parsed
+
+
+def resolve_inventory_values(stock_raw, daily_limit_raw):
+    stock_value = parse_optional_non_negative_int(stock_raw, "Current stock")
+    daily_limit_value = parse_optional_non_negative_int(daily_limit_raw, "Daily auto-reset limit")
+
+    if stock_value is None and daily_limit_value is None:
+        return -1, -1
+
+    if stock_value is None and daily_limit_value is not None:
+        return daily_limit_value, daily_limit_value
+
+    return stock_value if stock_value is not None else -1, daily_limit_value if daily_limit_value is not None else -1
+
+
+def sync_availability_with_stock(menu_item, previous_stock=None):
+    if menu_item.stock == 0:
+        menu_item.available = 0
+    elif previous_stock == 0 and menu_item.stock != 0:
+        menu_item.available = 1
+
+
+def serialize_menu_item(menu_item):
+    return {
+        "id": menu_item.id,
+        "item": menu_item.item,
+        "price": menu_item.price,
+        "category": menu_item.category or "",
+        "image": menu_item.image or "",
+        "stock": menu_item.stock,
+        "available": menu_item.available,
+    }
+
+
+def auto_reset_stock(user_id):
+    """
+    Checks all menu items for the user. If an item has a daily_limit > 0
+    and hasn't been reset today, sets its stock back to the daily_limit
+    and updates last_reset_date.
+    """
+    today_str = date.today().strftime('%Y-%m-%d')
+    items = Menu.query.filter_by(user_id=user_id).all()
+    updated = False
+    for item in items:
+        if item.daily_limit is None or item.daily_limit <= 0:
+            continue
+        if item.last_reset_date == today_str:
+            continue
+
+        item.stock = item.daily_limit
+        item.last_reset_date = today_str
+        if item.stock != 0:
+            item.available = 1
+        updated = True
+    if updated:
         db.session.commit()
 
+
+# ================= INVENTORY =================
+@menu_bp.route('/inventory', methods=['GET', 'POST'])
+@login_required
+def inventory():
+    if request.method == 'POST':
+        try:
+            item = request.form['item'].strip()
+            category = request.form['category'].strip()
+            if not item:
+                raise ValueError("Item name is required.")
+            if not category:
+                raise ValueError("Category is required.")
+
+            price = normalize_price(request.form['price'])
+            stock, daily_limit = resolve_inventory_values(
+                request.form.get('stock'),
+                request.form.get('daily_limit'),
+            )
+
+            file = request.files.get('image')
+            filename = ""
+            if file and file.filename != "":
+                filename = save_uploaded_image(file)
+        except ValueError as exc:
+            flash(str(exc), 'error')
+            return redirect('/inventory')
+
+        today_str = date.today().strftime('%Y-%m-%d')
+        db.session.add(Menu(
+            user_id=session['user_id'], item=item, price=price,
+            category=category, image=filename, stock=stock,
+            available=0 if stock == 0 else 1,
+            daily_limit=daily_limit,
+            last_reset_date=today_str if daily_limit > 0 else None
+        ))
+        db.session.commit()
+
+    # Reset stock if a new day has started
+    auto_reset_stock(session['user_id'])
+
     data = Menu.query.filter_by(user_id=session['user_id']).all()
-    user = User.query.get(session['user_id'])
+    data_tuples = [(m.id, m.item, m.price, m.category, m.image, m.available, m.stock, m.daily_limit) for m in data]
+
+    return render_template('inventory.html', data=data_tuples,
+                           username=session['username'])
+
+
+# ================= DASHBOARD =================
+@menu_bp.route('/dashboard')
+@login_required
+def dashboard():
+    # If not embedded, serve the software wrapper layout
+    if not request.args.get('embedded'):
+        return render_template('software_layout.html')
+
+    data = Menu.query.filter_by(user_id=session['user_id']).all()
+    user = db.session.get(User, session['user_id'])
     address = user.address or ""
     table_numbers = normalize_table_numbers(user.table_numbers)
 
@@ -121,7 +200,7 @@ def dashboard():
                            username=session['username'],
                            address=address, table_numbers=table_numbers,
                            slogan=user.slogan,
-                           theme_preset=user.theme_preset,
+                           theme_preset=normalize_theme_preset(user.theme_preset),
                            banner=user.banner, logo=user.logo,
                            upi_qr=user.upi_qr,
                            orders_today=orders_today,
@@ -132,26 +211,30 @@ def dashboard():
 @menu_bp.route('/update_restaurant', methods=['POST'])
 @login_required
 def update_restaurant():
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     if not user:
         return redirect('/')
 
-    user.address = request.form.get('address')
+    user.address = (request.form.get('address') or '').strip()
     user.slogan = request.form.get('slogan', '')
-    user.theme_preset = request.form.get('theme_preset', 'default')
+    user.theme_preset = normalize_theme_preset(request.form.get('theme_preset'))
     user.table_numbers = normalize_table_numbers(request.form.get('table_numbers'))
 
-    file = request.files.get('banner')
-    if file and file.filename != "":
-        user.banner = save_and_compress(file)
+    try:
+        file = request.files.get('banner')
+        if file and file.filename != "":
+            user.banner = save_uploaded_image(file)
 
-    logo_file = request.files.get('logo')
-    if logo_file and logo_file.filename != "":
-        user.logo = save_and_compress(logo_file)
+        logo_file = request.files.get('logo')
+        if logo_file and logo_file.filename != "":
+            user.logo = save_uploaded_image(logo_file)
 
-    upi_file = request.files.get('upi_qr')
-    if upi_file and upi_file.filename != "":
-        user.upi_qr = save_and_compress(upi_file)
+        upi_file = request.files.get('upi_qr')
+        if upi_file and upi_file.filename != "":
+            user.upi_qr = save_uploaded_image(upi_file)
+    except ValueError as exc:
+        flash(str(exc), 'error')
+        return redirect('/dashboard')
 
     db.session.commit()
     return redirect('/dashboard')
@@ -161,13 +244,38 @@ def update_restaurant():
 @menu_bp.route('/upload_excel', methods=['POST'])
 @login_required
 def upload_excel():
-    file = request.files['file']
-    df = pd.read_excel(file)
+    file = request.files.get('file')
+    if not file or not file.filename:
+        flash('Please choose an Excel file first.', 'error')
+        return redirect('/inventory')
+
+    if not file.filename.lower().endswith(('.xlsx', '.xls')):
+        flash('Only .xlsx and .xls files are supported.', 'error')
+        return redirect('/inventory')
+
+    try:
+        df = pd.read_excel(file)
+    except Exception:
+        flash('Unable to read the Excel file.', 'error')
+        return redirect('/inventory')
+
+    required_columns = {'item', 'price', 'category'}
+    normalized_columns = {str(col).strip().lower(): col for col in df.columns}
+    if not required_columns.issubset(normalized_columns):
+        flash('Excel must contain item, price, and category columns.', 'error')
+        return redirect('/inventory')
 
     for _, row in df.iterrows():
-        item = str(row['item'])
-        price = str(row['price'])
-        category = str(row['category'])
+        item = str(row[normalized_columns['item']]).strip()
+        category = str(row[normalized_columns['category']]).strip()
+
+        if not item or item.lower() == 'nan' or not category or category.lower() == 'nan':
+            continue
+
+        try:
+            price = normalize_price(row[normalized_columns['price']])
+        except ValueError:
+            continue
 
         existing = Menu.query.filter_by(
             user_id=session['user_id'], item=item).first()
@@ -178,11 +286,11 @@ def upload_excel():
                             price=price, category=category, image=""))
 
     db.session.commit()
-    return redirect('/dashboard')
+    return redirect('/inventory')
 
 
 # ================= DELETE =================
-@menu_bp.route('/delete/<int:id>')
+@menu_bp.route('/delete/<int:id>', methods=['POST'])
 @login_required
 def delete(id):
     item = Menu.query.get_or_404(id)
@@ -190,7 +298,7 @@ def delete(id):
         abort(403)
     db.session.delete(item)
     db.session.commit()
-    return redirect('/dashboard')
+    return redirect('/inventory')
 
 
 # ================= TOGGLE AVAILABILITY =================
@@ -200,9 +308,42 @@ def toggle_available(id):
     item = Menu.query.get_or_404(id)
     if item.user_id != session['user_id']:
         abort(403)
-    item.available = 0 if item.available else 1
+
+    if item.available:
+        item.available = 0
+    else:
+        if item.stock == 0 and item.daily_limit and item.daily_limit > 0:
+            item.stock = item.daily_limit
+        elif item.stock == 0:
+            flash('Set stock above 0 before marking the item as available.', 'error')
+            return redirect('/inventory')
+
+        item.available = 1
+
     db.session.commit()
-    return redirect('/dashboard')
+    return redirect('/inventory')
+
+
+# ================= UPDATE STOCK =================
+@menu_bp.route('/update_stock/<int:id>', methods=['POST'])
+@login_required
+def update_stock(id):
+    item = Menu.query.get_or_404(id)
+    if item.user_id != session['user_id']:
+        abort(403)
+
+    stock = request.form.get('stock', '').strip()
+    try:
+        previous_stock = item.stock
+        item.stock = parse_optional_non_negative_int(stock, "Current stock")
+        item.stock = item.stock if item.stock is not None else -1
+        sync_availability_with_stock(item, previous_stock)
+    except ValueError as exc:
+        flash(str(exc), 'error')
+        return redirect('/inventory')
+
+    db.session.commit()
+    return redirect('/inventory')
 
 
 # ================= EDIT =================
@@ -214,25 +355,46 @@ def edit(id):
         abort(403)
 
     if request.method == 'POST':
-        item.item = request.form['item']
-        item.price = request.form['price']
-        item.category = request.form['category']
+        try:
+            item_name = request.form['item'].strip()
+            category = request.form['category'].strip()
+            if not item_name:
+                raise ValueError("Item name is required.")
+            if not category:
+                raise ValueError("Category is required.")
 
-        file = request.files.get('image')
-        if file and file.filename != "":
-            item.image = save_and_compress(file)
+            previous_stock = item.stock
+            stock, daily_limit = resolve_inventory_values(
+                request.form.get('stock'),
+                request.form.get('daily_limit'),
+            )
+
+            item.item = item_name
+            item.price = normalize_price(request.form['price'])
+            item.category = category
+            item.stock = stock
+            item.daily_limit = daily_limit
+            item.last_reset_date = date.today().strftime('%Y-%m-%d') if daily_limit > 0 else None
+            sync_availability_with_stock(item, previous_stock)
+
+            file = request.files.get('image')
+            if file and file.filename != "":
+                item.image = save_uploaded_image(file)
+        except ValueError as exc:
+            flash(str(exc), 'error')
+            return redirect(f'/edit/{id}')
 
         db.session.commit()
-        return redirect('/dashboard')
+        return redirect('/inventory')
 
-    data = (item.item, item.price, item.category, item.image)
+    data = (item.item, item.price, item.category, item.image, item.stock, item.daily_limit)
     return render_template('edit.html', data=data, id=id)
 
 
 # ================= PUBLIC MENU =================
 @menu_bp.route('/menu/<username>')
 def menu(username):
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(username=username.upper()).first()
 
     if not user:
         return "Not Found", 404
@@ -242,12 +404,13 @@ def menu(username):
         if user.expiry < str(date.today()):
             return render_template("expired.html", whatsapp=user.whatsapp)
 
-    items = Menu.query.filter_by(user_id=user.id, available=1).all()
-    data = [(m.item, m.price, m.category, m.image) for m in items]
+    # Auto-reset stock if a new day has started
+    auto_reset_stock(user.id)
 
-    categories = db.session.query(Menu.category).filter_by(
-        user_id=user.id).distinct().all()
-    categories = [c[0] for c in categories]
+    items = Menu.query.filter_by(user_id=user.id).order_by(Menu.category, Menu.item).all()
+    data = [serialize_menu_item(menu_item) for menu_item in items]
+
+    categories = [category for category in dict.fromkeys(m.category for m in items if m.category)]
 
     table_numbers = parse_table_numbers(user.table_numbers)
 
@@ -259,7 +422,7 @@ def menu(username):
         whatsapp=user.whatsapp,
         address=user.address or "",
         slogan=user.slogan or "",
-        theme_preset=user.theme_preset or "default",
+        theme_preset=normalize_theme_preset(user.theme_preset),
         banner=user.banner,
         logo=user.logo,
         table_numbers=table_numbers
@@ -273,7 +436,7 @@ def captain_login():
 
 @menu_bp.route('/captain/<username>')
 def captain(username):
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(username=username.upper()).first()
 
     if not user:
         return "Not Found", 404
@@ -283,12 +446,13 @@ def captain(username):
         if user.expiry < str(date.today()):
             return render_template("expired.html", whatsapp=user.whatsapp)
 
-    items = Menu.query.filter_by(user_id=user.id, available=1).all()
-    data = [(m.item, m.price, m.category, m.image) for m in items]
+    # Auto-reset stock if a new day has started
+    auto_reset_stock(user.id)
 
-    categories = db.session.query(Menu.category).filter_by(
-        user_id=user.id).distinct().all()
-    categories = [c[0] for c in categories]
+    items = Menu.query.filter_by(user_id=user.id).order_by(Menu.category, Menu.item).all()
+    data = [serialize_menu_item(menu_item) for menu_item in items]
+
+    categories = [category for category in dict.fromkeys(m.category for m in items if m.category)]
 
     table_numbers = parse_table_numbers(user.table_numbers)
 
@@ -296,8 +460,8 @@ def captain(username):
         "captain.html",
         data=data,
         categories=categories,
-        username=username,
-        theme_preset=user.theme_preset or "default",
+        username=user.username,
+        theme_preset=normalize_theme_preset(user.theme_preset),
         logo=user.logo,
         table_numbers=table_numbers
     )
@@ -325,7 +489,7 @@ def generate_qr(username):
     qr_img = qr_img.resize((qr_size, qr_size))
 
     # Logo
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(username=username.upper()).first()
     if user and user.logo:
         logo_path = os.path.join(Config.UPLOAD_FOLDER, user.logo)
     else:
@@ -494,7 +658,7 @@ def billing():
     grand_total = sum(t['total'] for t in tables)
     total_orders = len(orders)
 
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
 
     return render_template('billing.html',
                            username=session['username'],

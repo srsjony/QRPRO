@@ -1,19 +1,84 @@
 from flask import Blueprint, request, jsonify, session
 from models import db, User, Menu, Order, OrderItem
 from datetime import datetime
+from decimal import Decimal
+from sqlalchemy.orm import selectinload
+
+from extensions import socketio
+from pricing import parse_price
 
 api_bp = Blueprint('api', __name__)
+ALLOWED_ORDER_STATUSES = {'pending', 'preparing', 'done', 'cancelled', 'settled'}
+
+
+def _parse_quantity(value):
+    try:
+        quantity = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Quantity must be a whole number.") from exc
+
+    if quantity <= 0:
+        raise ValueError("Quantity must be greater than zero.")
+
+    return quantity
+
+
+def _parse_allowed_tables(raw_value):
+    values = []
+    for table_no in (raw_value or '').split(','):
+        cleaned = table_no.strip()
+        if cleaned and cleaned not in values:
+            values.append(cleaned)
+    return set(values)
+
+
+def _load_order_menu_items(user, raw_items):
+    if not isinstance(raw_items, list) or not raw_items:
+        raise ValueError("At least one item is required.")
+
+    requested_quantities = {}
+    for raw_item in raw_items:
+        if not isinstance(raw_item, dict):
+            raise ValueError("Invalid item payload.")
+
+        menu_id = raw_item.get('id')
+        item_name = raw_item.get('name', '').strip()
+        quantity = _parse_quantity(raw_item.get('qty', 1))
+
+        menu_item = None
+        if menu_id is not None:
+            try:
+                menu_id = int(menu_id)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("Item id is invalid.") from exc
+            menu_item = Menu.query.filter_by(id=menu_id, user_id=user.id).first()
+        elif item_name:
+            menu_item = Menu.query.filter_by(user_id=user.id, item=item_name).first()
+
+        if not menu_item:
+            raise ValueError("One or more menu items are no longer available.")
+
+        requested_quantities[menu_item.id] = requested_quantities.get(menu_item.id, 0) + quantity
+
+    ordered_items = []
+    for menu_id, quantity in requested_quantities.items():
+        menu_item = Menu.query.get(menu_id)
+        if not menu_item:
+            raise ValueError("One or more menu items are no longer available.")
+        ordered_items.append((menu_item, quantity))
+
+    return ordered_items
 
 
 # ================= PLACE ORDER =================
 @api_bp.route('/api/order', methods=['POST'])
 def place_order():
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "No data"}), 400
 
-    username = data.get('username')
-    table = data.get('table')
+    username = str(data.get('username', '')).strip().upper()
+    table = str(data.get('table', '')).strip()
     items = data.get('items', [])
     notes = data.get('notes', '').strip()
 
@@ -24,29 +89,56 @@ def place_order():
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    total = sum(i.get('price', 0) * i.get('qty', 1) for i in items)
+    allowed_tables = _parse_allowed_tables(user.table_numbers)
+    if allowed_tables and table not in allowed_tables:
+        return jsonify({"error": "Invalid table number"}), 400
+
+    try:
+        order_items = _load_order_menu_items(user, items)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    total = Decimal("0.00")
 
     order = Order(
         user_id=user.id,
-        table_no=str(table),
+        table_no=table,
         notes=notes,
-        total=total,
+        total=0,
         status='pending',
         created_at=datetime.now()
     )
     db.session.add(order)
     db.session.flush()
 
-    for i in items:
+    for menu_item, qty in order_items:
+        if menu_item.available == 0:
+            db.session.rollback()
+            return jsonify({"error": f"{menu_item.item} is currently unavailable"}), 400
+
+        if menu_item.stock != -1:
+            if menu_item.stock < qty:
+                db.session.rollback()
+                return jsonify({"error": f"Only {menu_item.stock} left for {menu_item.item}"}), 400
+            menu_item.stock -= qty
+            if menu_item.stock == 0:
+                menu_item.available = 0
+
+        item_price = parse_price(menu_item.price)
+        total += item_price * qty
+
         order_item = OrderItem(
             order_id=order.id,
-            item_name=i.get('name', ''),
-            price=i.get('price', 0),
-            quantity=i.get('qty', 1)
+            item_name=menu_item.item,
+            price=float(item_price),
+            quantity=qty
         )
         db.session.add(order_item)
 
+    order.total = float(total)
     db.session.commit()
+
+    socketio.emit('new_order', {'order_id': order.id, 'table': table}, room=username)
 
     return jsonify({"success": True, "order_id": order.id}), 201
 
@@ -54,7 +146,7 @@ def place_order():
 # ================= KITCHEN ORDERS =================
 @api_bp.route('/kitchen_orders/<username>')
 def kitchen_orders(username):
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(username=username.upper()).first()
     if not user:
         return jsonify({"orders": []}), 404
 
@@ -63,7 +155,7 @@ def kitchen_orders(username):
         Order.user_id == user.id,
         Order.status.notin_(['done', 'cancelled', 'settled']),
         db.func.date(Order.created_at) == today
-    ).order_by(Order.created_at.desc()).all()
+    ).options(selectinload(Order.order_items)).order_by(Order.created_at.desc()).all()
 
     result = []
     for o in orders:
@@ -85,7 +177,7 @@ def kitchen_orders(username):
 # ================= TABLE STATUS =================
 @api_bp.route('/api/table_status/<username>')
 def table_status(username):
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(username=username.upper()).first()
     if not user:
         return jsonify({"tables": {}}), 404
 
@@ -104,12 +196,23 @@ def table_status(username):
 @api_bp.route('/update_order/<int:id>', methods=['POST'])
 def update_order(id):
     order = Order.query.get_or_404(id)
-    data = request.get_json()
-    if data and 'status' in data:
-        order.status = data['status']
-        db.session.commit()
-        return jsonify({"success": True})
-    return jsonify({"error": "No status"}), 400
+    data = request.get_json(silent=True) or {}
+    status = str(data.get('status', '')).strip().lower()
+
+    if not status:
+        return jsonify({"error": "No status"}), 400
+
+    if status not in ALLOWED_ORDER_STATUSES:
+        return jsonify({"error": "Invalid status"}), 400
+
+    order.status = status
+    db.session.commit()
+    
+    user = User.query.get(order.user_id)
+    if user:
+        socketio.emit('order_updated', {'order_id': order.id, 'status': status, 'table': order.table_no}, room=user.username)
+        
+    return jsonify({"success": True})
 
 
 # ================= SETTLE TABLE =================
@@ -135,6 +238,11 @@ def settle_table():
         o.status = 'settled'
 
     db.session.commit()
+    
+    user = User.query.get(user_id)
+    if user:
+        socketio.emit('table_settled', {'table': table_no}, room=user.username)
+        
     return jsonify({"success": True, "settled": len(orders)})
 
 
@@ -142,7 +250,7 @@ def settle_table():
 @api_bp.route('/kitchen/<username>')
 def kitchen(username):
     from flask import render_template
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(username=username.upper()).first()
     if not user:
         return "Not Found", 404
-    return render_template('Kitchen.html', username=username)
+    return render_template('Kitchen.html', username=user.username)
