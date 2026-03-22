@@ -10,4 +10,3 @@ gunicorn==23.0.0
 python-dotenv==1.0.1
 FlaskWebGui==1.1.9
 Flask-SocketIO==5.5.1
-eventlet==0.36.1
