@@ -150,11 +150,9 @@ def kitchen_orders(username):
     if not user:
         return jsonify({"orders": []}), 404
 
-    today = datetime.now().date()
     orders = Order.query.filter(
         Order.user_id == user.id,
-        Order.status.notin_(['done', 'cancelled', 'settled']),
-        db.func.date(Order.created_at) == today
+        Order.status.notin_(['done', 'cancelled', 'settled'])
     ).options(selectinload(Order.order_items)).order_by(Order.created_at.desc()).all()
 
     result = []

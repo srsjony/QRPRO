@@ -696,7 +696,7 @@
   <script>
     const RESTAURANT = '{{username}}';
     const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
-    let orders = {};
+    let orders = [];
     let knownIds = new Set();
     let currentFilter = 'active';
     let doneCount = 0;
@@ -835,15 +835,15 @@
       const grid = document.getElementById('ordersGrid');
       const title = document.getElementById('gridTitle');
 
-      const list = Object.values(orders).filter(o => {
+      const list = orders.filter(o => {
         if (o.status === 'cancelled') return false;
         if (currentFilter === 'active') return o.status !== 'done';
         return true;
       });
 
       // Stats
-      const pending = Object.values(orders).filter(o => o.status === 'pending').length;
-      const preparing = Object.values(orders).filter(o => o.status === 'preparing').length;
+      const pending = orders.filter(o => o.status === 'pending').length;
+      const preparing = orders.filter(o => o.status === 'preparing').length;
       document.getElementById('statPending').textContent = pending;
       document.getElementById('statPrep').textContent = preparing;
       document.getElementById('statDone').textContent = doneCount;
@@ -879,7 +879,7 @@
         }
       });
 
-      // Add/update cards
+      // Add/update cards in exact list order
       list.forEach((order, i) => {
         const id = String(order.id);
         const urgent = isUrgent(order.created_at);
@@ -889,7 +889,10 @@
           card = document.createElement('div');
           card.dataset.id = id;
           card.style.animationDelay = `${Math.min(i, 5) * 0.05}s`;
-          grid.appendChild(card);
+          grid.insertBefore(card, grid.children[i] || null);
+        } else if (grid.children[i] !== card) {
+          // Move to correct position if out of order
+          grid.insertBefore(card, grid.children[i] || null);
         }
 
         const isNew = !existing.has(id);
@@ -933,7 +936,7 @@
 
     // ── UPDATE TIMERS ─────────────────────────
     function updateTimers() {
-      Object.values(orders).forEach(order => {
+      orders.forEach(order => {
         const el = document.getElementById(`elapsed-${order.id}`);
         if (el) {
           const urgent = isUrgent(order.created_at);
@@ -953,11 +956,10 @@
         dot.classList.remove('offline');
         lbl.textContent = 'Live';
 
-        const newOrders = {};
+        const newOrdersList = data.orders || [];
         let hasNew = false;
 
-        data.orders.forEach(order => {
-          newOrders[order.id] = order;
+        newOrdersList.forEach(order => {
           if (!knownIds.has(order.id)) {
             hasNew = true;
             knownIds.add(order.id);
@@ -968,7 +970,7 @@
           }
         });
 
-        orders = newOrders;
+        orders = newOrdersList;
         renderOrders();
       } catch (e) {
         const dot = document.getElementById('connDot');

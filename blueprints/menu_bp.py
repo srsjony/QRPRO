@@ -617,13 +617,10 @@ def billing():
     from datetime import datetime
     from collections import defaultdict
 
-    today = datetime.now().date()
-
-    # Get today's non-settled/cancelled orders for this user
+    # Get ALL non-settled/cancelled orders for this user (even from previous days)
     orders = Order.query.filter(
         Order.user_id == session['user_id'],
-        Order.status.notin_(['settled', 'cancelled']),
-        db.func.date(Order.created_at) == today
+        Order.status.notin_(['settled', 'cancelled'])
     ).order_by(Order.table_no, Order.created_at).all()
 
     # Aggregate by table number
@@ -665,7 +662,7 @@ def billing():
                            tables=tables,
                            grand_total=grand_total,
                            total_orders=total_orders,
-                           today=today.strftime('%d %b %Y'),
+                           today=datetime.now().date().strftime('%d %b %Y'),
                            logo=user.logo,
                            address=user.address or '',
                            upi_qr=user.upi_qr)

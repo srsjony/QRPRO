@@ -458,6 +458,38 @@
       transform: scale(0.98);
     }
 
+    /* Floating Print Button */
+    .fab-print {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-full);
+      background: var(--card-bg);
+      border: 2px solid var(--ember);
+      color: var(--ember);
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(200, 135, 58, 0.3);
+      z-index: 90;
+      transition: transform 0.2s, bottom 0.3s var(--ease-out-expo);
+      cursor: pointer;
+    }
+
+    /* Move up if bottom bar is visible */
+    .bottom-bar.visible ~ .fab-print {
+      bottom: 100px;
+    }
+
+    .fab-print:active {
+      transform: scale(0.92);
+      background: var(--ember);
+      color: var(--obsidian);
+    }
+
     /* Toast */
     .toast {
       position: fixed;
@@ -512,10 +544,7 @@
     <div class="header">
       <button class="header-btn" onclick="goBackToTables()">‹</button>
       <div class="header-title">Table <span id="hdr-table">1</span></div>
-      <div style="display:flex; gap:4px;">
-        <button class="header-btn" onclick="printBill()" title="Print Bill">🖨️</button>
-        <button class="header-btn" onclick="clearOrder()" title="Clear Form">↺</button>
-      </div>
+      <button class="header-btn" onclick="clearOrder()" title="Clear Form">↺</button>
     </div>
 
     <div class="search-bar-wrap">
@@ -571,6 +600,9 @@
         <span>🚀</span>
       </button>
     </div>
+
+    <!-- Print Bill FAB -->
+    <div class="fab-print" onclick="printBill()" title="Print One-Tap Receipt">🖨️</div>
   </div>
 
   <script>
