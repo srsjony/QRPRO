@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, session, abort
-from models import db, User, Menu
+from flask import Blueprint, render_template, request, redirect, session, abort, flash
+from models import db, User, Menu, Order
 from functools import wraps
 from datetime import datetime, timedelta, date
 import re
@@ -59,6 +59,19 @@ def delete_user(id):
     user = User.query.get_or_404(id)
     db.session.delete(user)
     db.session.commit()
+    return redirect('/superadmin')
+
+
+@admin_bp.route('/reset_user/<int:id>', methods=['POST'])
+@admin_required
+def reset_user(id):
+    """Reset a user by clearing out all their old orders."""
+    user = User.query.get_or_404(id)
+    # Clear all orders for this user
+    Order.query.filter_by(user_id=id).delete()
+    
+    db.session.commit()
+    flash(f'User {user.username} has been reset (All orders wiped).', 'success')
     return redirect('/superadmin')
 
 

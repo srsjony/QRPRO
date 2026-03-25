@@ -104,6 +104,11 @@
             color: white;
         }
 
+        .btn-reset {
+            background: #ff9f43;
+            color: white;
+        }
+
         .btn-qr {
             background: #6c5ce7;
             color: white;
@@ -242,6 +247,11 @@
                                 onsubmit="return confirm('Delete {{u.username}}?')">
                                 {% include 'csrf_field.html' %}
                                 <button class="btn-delete" type="submit">Delete</button>
+                            </form>
+                            <form method="POST" action="/reset_user/{{u.id}}" style="display:inline"
+                                onsubmit="return confirm('Reset {{u.username}}? This will clear all orders and history, but keep all settings.')">
+                                {% include 'csrf_field.html' %}
+                                <button class="btn-reset" type="submit">Reset</button>
                             </form>
                             <a href="/qr/{{u.username}}" target="_blank"><button class="btn-qr">Preview</button></a>
                             <a href="/qr/{{u.username}}?type=png"><button class="btn-png">PNG</button></a>

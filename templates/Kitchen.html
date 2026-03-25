@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -694,28 +694,22 @@
 
   <!-- NOTIFICATION AUDIO (silent oscillator — no external file needed) -->
   <script>
-    // --- GLOBAL DIALOG OVERRIDES ---
-    window.alert = function(msg) { 
-        if (typeof showToast === 'function') showToast(msg, true);
-        else console.log('ALERT:', msg);
+    window.alert = function(msg) {
+      if (typeof showToast === 'function') showToast(msg, true);
+      else console.log('ALERT:', msg);
     };
-    window.confirm = function(msg) {
-        console.warn('Blocking confirm() called:', msg);
-        return true; // Auto-confirm as fallback if we missed a modal refactor
-    };
+    window.confirm = function(msg) { return true; };
+
     const RESTAURANT = '{{username}}';
     const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
     let orders = [];
     let knownIds = new Set();
     let currentFilter = 'active';
-    let doneCount = 0;
-    let totalCount = 0;
 
-    // ── CLOCK ─────────────────────────────────
+    // Clock
     function tickClock() {
       const now = new Date();
-      document.getElementById('clock').textContent =
-        now.toTimeString().slice(0, 8);
+      document.getElementById('clock').textContent = now.toTimeString().slice(0, 8);
     }
     tickClock();
     setInterval(tickClock, 1000);
@@ -723,306 +717,183 @@
     let audioCtx = null;
     let soundEnabled = true;
 
-    // Auto-enable sound on first user interaction (required by browsers)
     function initAudio() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
       soundEnabled = true;
       const btn = document.getElementById('btnSound');
-      btn.textContent = '🔊 Sound On';
+      btn.textContent = '&#128266; Sound On';
       btn.classList.add('enabled');
     }
 
     function toggleSound() {
-      if (!audioCtx) {
-        initAudio();
-        return;
-      }
+      if (!audioCtx) { initAudio(); return; }
       soundEnabled = !soundEnabled;
       const btn = document.getElementById('btnSound');
-      if (soundEnabled) {
-        btn.textContent = '🔊 Sound On';
-        btn.classList.add('enabled');
-      } else {
-        btn.textContent = '🔇 Sound Off';
-        btn.classList.remove('enabled');
-      }
+      if (soundEnabled) { btn.textContent = '&#128266; Sound On'; btn.classList.add('enabled'); }
+      else { btn.textContent = '&#128263; Sound Off'; btn.classList.remove('enabled'); }
     }
 
-    // Auto-init audio on first click/touch anywhere on the page
     document.addEventListener('click', function autoInit() {
       initAudio();
       document.removeEventListener('click', autoInit);
     }, { once: true });
 
-    // ── AUDIO PING ────────────────────────────
     function ping() {
       if (!soundEnabled || !audioCtx) return;
       try {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitch A5
-        osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1); // Drop to A4
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1);
         osc.type = 'sine';
-
         gain.gain.setValueAtTime(0, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05); // quick fade in
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5); // long fade out
-
+        gain.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
         osc.start(); osc.stop(audioCtx.currentTime + 0.5);
-      } catch (e) { }
+      } catch (e) {}
     }
 
-    // ── TOAST ─────────────────────────────────
-        function showToast(msg, isError = false) {
-        const existing = document.getElementById('appToast');
-        if (existing) existing.remove();
-        const toast = document.createElement('div');
-        toast.id = 'appToast';
-        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' + (isError ? '#ef4444' : '#22c55e') + ';color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:all 0.3s ease;opacity:0;transform:translateX(-50%) translateY(20px);';
-        toast.textContent = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(-50%) translateY(0)'; }, 10);
-        setTimeout(() => { 
-            toast.style.opacity = '0'; toast.style.transform = 'translateX(-50%) translateY(20px)';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }</strong>${itemCount} item${itemCount !== 1 ? 's' : ''}`;
+    function showToast(msg, isError) {
+      isError = isError || false;
+      const wrap = document.getElementById('toastWrap');
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.innerHTML = '<strong>' + (isError ? '&#9888; ' : '&#10003; ') + msg + '</strong>';
       wrap.appendChild(el);
-      setTimeout(() => {
+      setTimeout(function() {
         el.style.animation = 'toastOut 0.3s ease forwards';
-        setTimeout(() => el.remove(), 300);
+        setTimeout(function() { el.remove(); }, 300);
       }, 3500);
     }
 
-    // ── TIME ELAPSED ──────────────────────────
     function elapsed(created_at) {
       const created = new Date(created_at.replace(' ', 'T') + 'Z');
       const diff = Math.floor((Date.now() - created.getTime()) / 1000);
-      if (diff < 60) return `${diff}s`;
-      if (diff < 3600) return `${Math.floor(diff / 60)}m ${diff % 60}s`;
-      return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}m`;
+      if (diff < 60) return diff + 's';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ' + (diff % 60) + 's';
+      return Math.floor(diff / 3600) + 'h ' + Math.floor((diff % 3600) / 60) + 'm';
     }
 
     function isUrgent(created_at) {
       const created = new Date(created_at.replace(' ', 'T') + 'Z');
-      return (Date.now() - created.getTime()) > 10 * 60 * 1000; // >10 min
+      return (Date.now() - created.getTime()) > 10 * 60 * 1000;
     }
 
-    // ── FILTER ────────────────────────────────
     function setFilter(f, btn) {
       currentFilter = f;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
       renderOrders();
     }
 
-    // ── STATUS ACTION ─────────────────────────
     async function setStatus(id, status) {
-      // Instantly remove visually if cancelled to avoid waiting for fetchOrders loop
       if (status === 'cancelled') {
-        const card = document.querySelector(`[data-id="${id}"]`);
-        if (card) {
-          card.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-          card.style.opacity = '0'; card.style.transform = 'scale(0.95)';
-          setTimeout(() => card.remove(), 200);
-        }
+        const card = document.getElementById('card-' + id);
+        if (card) { card.style.opacity = '0'; card.style.transform = 'scale(0.95)'; setTimeout(function() { card.remove(); }, 300); }
       }
-
-      const r = await fetch(`/update_order/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-        body: JSON.stringify({ status })
-      });
-      if (r.ok) {
-        if (status === 'done') { doneCount++; totalCount++; }
-        fetchOrders();
-      } else {
-        // If failed to cancel, reload orders to bring it back
-        fetchOrders();
-      }
+      try {
+        await fetch('/update_order/' + id, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+          body: JSON.stringify({ status: status })
+        });
+      } catch (e) {}
+      fetchOrders();
     }
 
-    // ── RENDER ────────────────────────────────
     function renderOrders() {
       const grid = document.getElementById('ordersGrid');
       const title = document.getElementById('gridTitle');
-
-      const list = orders.filter(o => {
-        if (o.status === 'cancelled') return false;
-        if (currentFilter === 'active') return o.status !== 'done';
+      let filtered = orders.filter(function(o) {
+        if (currentFilter === 'active') return o.status === 'pending' || o.status === 'preparing';
         return true;
       });
-
-      // Stats
-      const pending = orders.filter(o => o.status === 'pending').length;
-      const preparing = orders.filter(o => o.status === 'preparing').length;
-      document.getElementById('statPending').textContent = pending;
-      document.getElementById('statPrep').textContent = preparing;
-      document.getElementById('statDone').textContent = doneCount;
-      document.getElementById('statTotal').textContent = totalCount + doneCount;
-
-      if (list.length === 0) {
-        const msg = currentFilter === 'active'
-          ? 'All clear — no active orders' : 'No orders yet today';
-        grid.innerHTML = `<div class="empty-kds">
-      <div class="e-icon">🍽</div>
-      <h3>${msg}</h3>
-      <p>New orders will appear here automatically</p>
-    </div>`;
-        title.textContent = currentFilter === 'active' ? 'Active Orders' : 'All Orders';
+      if (filtered.length === 0) {
+        title.textContent = currentFilter === 'active' ? 'LIVE ORDERS' : 'ALL ORDERS';
+        grid.innerHTML = '<div class="empty-kds"><div class="e-icon">&#127857;</div><h3>Kitchen Clear</h3><p>' + (currentFilter === 'active' ? 'No active orders right now.' : 'No orders to display.') + '</p></div>';
         return;
       }
-
-      title.textContent = `${list.length} order${list.length !== 1 ? 's' : ''}`;
-
-      // Preserve existing cards, update timers, add/remove cards
-      const existing = new Set([...grid.querySelectorAll('.order-card')].map(c => c.dataset.id));
-      const incoming = new Set(list.map(o => String(o.id)));
-
-      // Remove cards no longer in list
-      existing.forEach(id => {
-        if (!incoming.has(id)) {
-          const card = grid.querySelector(`[data-id="${id}"]`);
-          if (card) {
-            card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-            card.style.opacity = '0'; card.style.transform = 'scale(0.95)';
-            setTimeout(() => card.remove(), 300);
-          }
+      title.textContent = (currentFilter === 'active' ? 'LIVE ORDERS' : 'ALL ORDERS') + ' — ' + filtered.length;
+      // Remove stale cards
+      grid.querySelectorAll('.order-card').forEach(function(card) {
+        const id = parseInt(card.id.replace('card-', ''));
+        if (!filtered.find(function(o) { return o.id === id; })) {
+          card.style.opacity = '0';
+          setTimeout(function() { card.remove(); }, 300);
         }
       });
-
-      // Add/update cards in exact list order
-      list.forEach((order, i) => {
-        const id = String(order.id);
-        const urgent = isUrgent(order.created_at);
-        let card = grid.querySelector(`[data-id="${id}"]`);
-
-        if (!card) {
+      filtered.forEach(function(o) {
+        const isNew = !knownIds.has ? false : false;
+        const items = o.items.map(function(it) {
+          return '<div class="order-item"><span class="item-name">' + it.name + '</span><span class="item-qty">x' + it.qty + '</span></div>';
+        }).join('');
+        const notes = o.notes ? '<div class="order-notes">&#128221; ' + o.notes + '</div>' : '';
+        const el_elapsed = elapsed(o.created_at);
+        const urgent = isUrgent(o.created_at);
+        const actions = o.status === 'pending'
+          ? '<button class="action-btn btn-preparing" onclick="setStatus(' + o.id + ','preparing')">Preparing</button><button class="action-btn btn-done" onclick="setStatus(' + o.id + ','done')">Done</button>'
+          : o.status === 'preparing'
+          ? '<button class="action-btn btn-done" onclick="setStatus(' + o.id + ','done')">Mark Done</button><button class="action-btn btn-undo" onclick="setStatus(' + o.id + ','pending')">Undo</button>'
+          : '<button class="action-btn btn-undo" onclick="setStatus(' + o.id + ','pending')">Re-open</button>';
+        const html = '<div class="card-top"><div class="table-badge"><span>Table</span>' + o.table + '</div><div class="card-meta"><span class="status-pill ' + o.status + '">' + o.status + '</span><span class="elapsed' + (urgent ? ' urgent' : '') + '">' + el_elapsed + '</span></div></div><div class="card-items">' + items + notes + '</div><div class="card-footer"><span class="order-total">Rs.' + parseFloat(o.total).toFixed(2) + '</span><div class="action-row">' + actions + '</div></div>';
+        let card = document.getElementById('card-' + o.id);
+        if (card) {
+          card.className = 'order-card status-' + o.status;
+          card.innerHTML = html;
+        } else {
           card = document.createElement('div');
-          card.dataset.id = id;
-          card.style.animationDelay = `${Math.min(i, 5) * 0.05}s`;
-          grid.insertBefore(card, grid.children[i] || null);
-        } else if (grid.children[i] !== card) {
-          // Move to correct position if out of order
-          grid.insertBefore(card, grid.children[i] || null);
-        }
-
-        const isNew = !existing.has(id);
-        card.className = `order-card status-${order.status}${isNew ? ' new-flash' : ''}`;
-
-        const actionBtns = order.status === 'pending'
-          ? `<button class="action-btn" onclick="showCancelModal(${order.id})" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">✕ Cancel</button>
-         <button class="action-btn btn-preparing" onclick="setStatus(${order.id},'preparing')">🔥 Start</button>
-         <button class="action-btn btn-done" onclick="setStatus(${order.id},'done')">✓ Done</button>`
-          : `<button class="action-btn btn-undo" onclick="setStatus(${order.id},'pending')">↩ Back</button>
-         <button class="action-btn" onclick="showCancelModal(${order.id})" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">✕ Cancel</button>
-         <button class="action-btn btn-done" onclick="setStatus(${order.id},'done')">✓ Done</button>`;
-
-        card.innerHTML = `
-      <div class="card-top">
-        <div class="table-badge">
-          <span>Table</span>${order.table}
-        </div>
-        <div class="card-meta">
-          <span class="status-pill ${order.status}">${order.status === 'pending' ? '⏳ Pending' : '🔥 Preparing'}</span>
-          <span class="elapsed ${urgent ? 'urgent' : ''}" id="elapsed-${order.id}">
-            ${elapsed(order.created_at)}${urgent ? ' ⚠' : ''}
-          </span>
-        </div>
-      </div>
-      <div class="card-items">
-        ${order.items.map(item => `
-          <div class="order-item">
-            <span class="item-name">${item.name}</span>
-            <span class="item-qty">×${item.qty}</span>
-          </div>
-        `).join('')}
-        ${order.notes ? `<div class="order-notes">💬 ${order.notes}</div>` : ''}
-      </div>
-      <div class="card-footer">
-        <span class="order-total">₹${order.total}</span>
-        <div class="action-row">${actionBtns}</div>
-      </div>`;
-      });
-    }
-
-    // ── UPDATE TIMERS ─────────────────────────
-    function updateTimers() {
-      orders.forEach(order => {
-        const el = document.getElementById(`elapsed-${order.id}`);
-        if (el) {
-          const urgent = isUrgent(order.created_at);
-          el.className = `elapsed ${urgent ? 'urgent' : ''}`;
-          el.textContent = elapsed(order.created_at) + (urgent ? ' ⚠' : '');
+          card.id = 'card-' + o.id;
+          card.className = 'order-card status-' + o.status + ' new-flash';
+          card.innerHTML = html;
+          grid.appendChild(card);
         }
       });
     }
 
-    // ── FETCH LOOP ────────────────────────────
     async function fetchOrders() {
       try {
-        const res = await fetch(`/kitchen_orders/${RESTAURANT}`);
+        const res = await fetch('/kitchen_orders/' + RESTAURANT);
         const data = await res.json();
-        const dot = document.getElementById('connDot');
-        const lbl = document.getElementById('connLabel');
-        dot.classList.remove('offline');
-        lbl.textContent = 'Live';
-
-        const newOrdersList = data.orders || [];
-        let hasNew = false;
-
-        newOrdersList.forEach(order => {
-          if (!knownIds.has(order.id)) {
-            hasNew = true;
-            knownIds.add(order.id);
-            if (knownIds.size > 1) { // don't alert on initial load
-              showOrderToast(order.table, order.items.length);
-              ping();
-            }
+        const newOrders = data.orders || [];
+        const newIds = new Set(newOrders.map(function(o) { return o.id; }));
+        newOrders.forEach(function(o) {
+          if (!knownIds.has(o.id) && (o.status === 'pending' || o.status === 'preparing')) {
+            ping();
+            showToast('New order — Table ' + o.table, false);
           }
         });
-
-        orders = newOrdersList;
+        orders = newOrders;
+        knownIds = newIds;
+        updateStats();
         renderOrders();
-      } catch (e) {
-        const dot = document.getElementById('connDot');
-        const lbl = document.getElementById('connLabel');
-        dot.classList.add('offline');
-        lbl.textContent = 'Reconnecting…';
-      }
+      } catch (e) {}
     }
 
-    // ── INIT ──────────────────────────────────
+    function updateStats() {
+      document.getElementById('statPending').textContent = orders.filter(function(o) { return o.status === 'pending'; }).length;
+      document.getElementById('statPrep').textContent = orders.filter(function(o) { return o.status === 'preparing'; }).length;
+      document.getElementById('statDone').textContent = orders.filter(function(o) { return o.status === 'done'; }).length;
+      document.getElementById('statTotal').textContent = orders.length;
+    }
+
+    const socket = io({ transports: ['websocket', 'polling'] });
+    socket.on('connect', function() {
+      socket.emit('join', { room: RESTAURANT });
+      document.getElementById('connDot').classList.remove('offline');
+      document.getElementById('connLabel').textContent = 'Live';
+    });
+    socket.on('disconnect', function() {
+      document.getElementById('connDot').classList.add('offline');
+      document.getElementById('connLabel').textContent = 'Reconnecting…';
+    });
+    socket.on('new_order', function() { fetchOrders(); });
+    socket.on('order_updated', function() { fetchOrders(); });
+    socket.on('table_settled', function() { fetchOrders(); });
+
     fetchOrders();
-
-    const socket = io();
-    
-    socket.on("connect", () => {
-        socket.emit("join", { username: RESTAURANT });
-        const dot = document.getElementById("connDot");
-        const lbl = document.getElementById("connLabel");
-        dot.classList.remove("offline");
-        lbl.textContent = "Live";
-    });
-
-    socket.on("disconnect", () => {
-        const dot = document.getElementById("connDot");
-        const lbl = document.getElementById("connLabel");
-        dot.classList.add("offline");
-        lbl.textContent = "Reconnecting…";
-    });
-
-    socket.on("new_order", () => { fetchOrders(); });
-    socket.on("order_updated", () => { fetchOrders(); });
-    socket.on("table_settled", () => { fetchOrders(); });
-
-    setInterval(updateTimers, 10000); setInterval(fetchOrders, 30000); // update timers every 10s
+    setInterval(fetchOrders, 8000);
   </script>
 
 
