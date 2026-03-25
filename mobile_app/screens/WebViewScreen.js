@@ -314,6 +314,12 @@ export default function WebViewScreen({ navigation, route }) {
     if (loginData && navState.url && navState.url.includes('/select_profile')) {
       setLoading(false);
     }
+    // Handle switching profile from the Profile tab natively
+    if (isMainTab && title === 'Profiles' && navState.url && navState.url.includes('/dashboard')) {
+      // Reload the entire Tab Navigator from scratch so ALL tabs (Dashboard, Kitchen, etc.) 
+      // fetch fresh data for the newly selected branch instead of showing cached screens.
+      navigation.replace('MainTabs', { timestamp: Date.now() });
+    }
     // Handle manual logout from select_profile or elsewhere
     if (navState.url && navState.url.includes('/logout')) {
       navigation.replace('Login');

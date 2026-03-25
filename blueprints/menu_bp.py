@@ -176,9 +176,13 @@ def inventory():
 def dashboard():
     # If not embedded, serve the software wrapper layout
     if not request.args.get('embedded'):
-        # Pass family information for the Branch switcher
+        # Pass family information for the Branch switcher (only for Main)
         main_id = session.get('original_user_id', session['user_id'])
-        family = User.query.filter((User.id == main_id) | (User.parent_id == main_id)).all()
+        current_user = User.query.get(session['user_id'])
+        if not current_user.parent_id:
+            family = User.query.filter((User.id == main_id) | (User.parent_id == main_id)).all()
+        else:
+            family = [current_user]
         return render_template('software_layout.html', family=family, current_user_id=session['user_id'])
 
     data = Menu.query.filter_by(user_id=session['user_id']).all()
@@ -208,6 +212,15 @@ def dashboard():
                            upi_qr=user.upi_qr,
                            orders_today=orders_today,
                            revenue_today=revenue_today)
+
+
+# ================= KITCHEN CURRENT (DYNAMIC) =================
+@menu_bp.route('/kitchen_current')
+@login_required
+def kitchen_current():
+    query_string = request.query_string.decode('utf-8')
+    suffix = f"?{query_string}" if query_string else ""
+    return redirect(f"/kitchen/{session['username']}{suffix}")
 
 
 # ================= UPDATE RESTAURANT =================
@@ -618,7 +631,12 @@ def order_history():
 @login_required
 def sales_report():
     main_id = session.get('original_user_id', session['user_id'])
-    family = User.query.filter((User.id == main_id) | (User.parent_id == main_id)).all()
+    current_user = User.query.get(session['user_id'])
+    
+    if not current_user.parent_id:
+        family = User.query.filter((User.id == main_id) | (User.parent_id == main_id)).all()
+    else:
+        family = [current_user]
     
     branch_id = request.args.get('branch_id', type=int)
     month = request.args.get('month', type=int)

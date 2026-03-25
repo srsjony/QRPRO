@@ -51,11 +51,13 @@ def login():
             if user.is_admin == 1:
                 return redirect('/superadmin')
 
-            main_id = session['original_user_id']
-            family_count = User.query.filter((User.id == main_id) | (User.parent_id == main_id)).count()
+            # ONLY Main account can switch profiles
+            if not user.parent_id:
+                main_id = session['original_user_id']
+                family_count = User.query.filter((User.id == main_id) | (User.parent_id == main_id)).count()
 
-            if family_count > 1:
-                return redirect('/select_profile')
+                if family_count > 1:
+                    return redirect('/select_profile')
 
             return redirect('/dashboard')
 
@@ -106,6 +108,10 @@ def register():
 def select_profile():
     if 'original_user_id' not in session:
         return redirect('/')
+
+    current_user = User.query.get(session['user_id'])
+    if current_user and current_user.parent_id:
+        return redirect('/dashboard')
 
     main_id = session['original_user_id']
     main_user = User.query.get(main_id)

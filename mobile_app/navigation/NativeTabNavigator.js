@@ -12,8 +12,10 @@ const Tab = createBottomTabNavigator();
 const TABS = [
   { name: 'Dashboard', path: '/dashboard', icon: 'view-dashboard',    color: COLORS.ember  },
   { name: 'Inventory', path: '/inventory', icon: 'package-variant-closed', color: '#ef4444'  },
-  { name: 'Kitchen',   path: '/kitchen',   icon: 'chef-hat',          color: '#f59e0b'  },
+  { name: 'Kitchen',   path: '/kitchen_current',   icon: 'chef-hat',          color: '#f59e0b'  },
   { name: 'Billing',   path: '/billing',   icon: 'cash-register',     color: '#22c55e'  },
+  { name: 'Reports',   path: '/sales_report', icon: 'chart-bar',      color: '#8b5cf6'  },
+  { name: 'Profiles',  path: '/select_profile', icon: 'account-group', color: '#0ea5e9'  },
 ];
 
 function TabBar({ state, descriptors, navigation }) {
@@ -72,7 +74,7 @@ export default function NativeTabNavigator({ route, navigation }) {
           component={WebViewScreen}
           initialParams={{
             title: tab.name,
-            path: tab.name === 'Kitchen' ? `/kitchen/${username || ''}` : tab.path,
+            path: tab.path,
             color: tab.color,
             isMainTab: true,
           }}
