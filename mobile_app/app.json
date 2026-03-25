@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "QR Restaurant",
-    "slug": "qr-restaurant",
+    "name": "Restromate",
+    "slug": "restromate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,13 +24,20 @@
       },
       "permissions": [
         "INTERNET",
-        "CAMERA"
+        "CAMERA",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [],
+    "plugins": [
+      "expo-asset"
+    ],
     "extra": {
       "eas": {
         "projectId": "616bd4bd-341a-4f92-8ef9-05ced2d88feb"

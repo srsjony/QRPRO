@@ -1,0 +1,3 @@
+The field "cli.appVersionSource" is not set, but it will be required in the future. Learn more: https://docs.expo.dev/build-reference/app-versions/
+Project config: Slug for project identified by "extra.eas.projectId" (qr-menu-pro) does not match the "slug" field (qr-restaurant). Learn more: https://expo.fyi/eas-project-id
+    Error: build command failed.

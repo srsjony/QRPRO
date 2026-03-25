@@ -194,7 +194,33 @@
 
     @media (max-width: 600px) {
       .form-grid { grid-template-columns: 1fr; }
-      .menu-actions { flex-direction: column; gap: 4px; }
+      .page { padding: 16px 12px 60px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .stat-card { padding: 12px 14px; }
+      .stat-value { font-size: 26px; }
+      .stat-label { font-size: 10px; }
+      .card { padding: 14px; border-radius: 12px; }
+      .section-title { font-size: 18px; }
+
+      /* Menu rows: stack layout for mobile */
+      .menu-row {
+        flex-wrap: wrap; gap: 10px; padding: 14px 0;
+      }
+      .menu-img { width: 44px; height: 44px; border-radius: 8px; }
+      .menu-info { flex: 1; min-width: 60%; }
+      .menu-name { font-size: 14px; }
+      .menu-meta { font-size: 12px; }
+      .menu-actions {
+        width: 100%; flex-direction: row; flex-wrap: wrap; gap: 6px;
+        padding-top: 6px; border-top: 1px solid rgba(200,135,58,0.08);
+      }
+      .menu-actions form { display: flex; align-items: center; }
+      .action-link { font-size: 11px; padding: 6px 10px; }
+
+      /* Upload box */
+      .upload-box { padding: 18px; font-size: 13px; }
+      .field input, .field select { padding: 10px 12px; font-size: 13px; }
+      .search-bar input { padding: 10px 12px; font-size: 13px; }
     }
   </style>
 </head>

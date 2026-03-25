@@ -20,6 +20,8 @@ class User(db.Model):
     table_numbers = db.Column(db.String(500), default='1,2,3,4,5,6,7,8,9,10')
     slogan = db.Column(db.String(200), default='')
     theme_preset = db.Column(db.String(50), default='default')
+    parent_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    branch_name = db.Column(db.String(100), default='Main')
 
     menu_items = db.relationship('Menu', backref='user', lazy=True, cascade='all, delete-orphan')
     orders = db.relationship('Order', backref='user', lazy=True, cascade='all, delete-orphan')

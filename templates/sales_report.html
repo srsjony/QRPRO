@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Report</title>
+    <style>
+        :root {
+            --obsidian: #0b0a09;
+            --coal: #141210;
+            --ash: #1e1c1a;
+            --ember: #c8873a;
+            --cream: #f2e8d9;
+            --cream-muted: #9a8a7a;
+            --divider: rgba(200, 135, 58, 0.2);
+            --ff-body: 'DM Sans', system-ui, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--ff-body);
+            background: var(--obsidian);
+            color: var(--cream);
+            padding: 24px;
+        }
+
+        .header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .filter-form {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-form select, .filter-form button {
+            background: var(--coal);
+            border: 1px solid var(--divider);
+            color: var(--cream);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .filter-form button {
+            background: var(--ember);
+            color: var(--obsidian);
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+
+        .filter-form button:hover {
+            filter: brightness(1.1);
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: var(--coal);
+            border: 1px solid var(--divider);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .card-title {
+            font-size: 13px;
+            color: var(--cream-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .card-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--ember);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--coal);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--divider);
+        }
+
+        th, td {
+            padding: 14px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--divider);
+        }
+
+        th {
+            background: var(--ash);
+            font-size: 13px;
+            color: var(--cream-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .leaderboard-rank {
+            width: 40px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--ember);
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>📊 Sales Report</h2>
+        <form class="filter-form" method="GET">
+            <input type="hidden" name="embedded" value="true">
+            
+            {% if family|length > 1 %}
+            <select name="branch_id">
+                <option value="">All Branches</option>
+                {% for f in family %}
+                <option value="{{ f.id }}" {% if filter_branch == f.id %}selected{% endif %}>{{ f.branch_name }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+
+            <select name="month">
+                <option value="">All Months</option>
+                <option value="1" {% if filter_month == 1 %}selected{% endif %}>Jan</option>
+                <option value="2" {% if filter_month == 2 %}selected{% endif %}>Feb</option>
+                <option value="3" {% if filter_month == 3 %}selected{% endif %}>Mar</option>
+                <option value="4" {% if filter_month == 4 %}selected{% endif %}>Apr</option>
+                <option value="5" {% if filter_month == 5 %}selected{% endif %}>May</option>
+                <option value="6" {% if filter_month == 6 %}selected{% endif %}>Jun</option>
+                <option value="7" {% if filter_month == 7 %}selected{% endif %}>Jul</option>
+                <option value="8" {% if filter_month == 8 %}selected{% endif %}>Aug</option>
+                <option value="9" {% if filter_month == 9 %}selected{% endif %}>Sep</option>
+                <option value="10" {% if filter_month == 10 %}selected{% endif %}>Oct</option>
+                <option value="11" {% if filter_month == 11 %}selected{% endif %}>Nov</option>
+                <option value="12" {% if filter_month == 12 %}selected{% endif %}>Dec</option>
+            </select>
+
+            <select name="year">
+                <option value="">All Years</option>
+                {% for y in range(2025, 2035) %}
+                <option value="{{ y }}" {% if filter_year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="sort">
+                <option value="qty" {% if sort_by == 'qty' %}selected{% endif %}>Sort by Quantity</option>
+                <option value="revenue" {% if sort_by == 'revenue' %}selected{% endif %}>Sort by Revenue</option>
+            </select>
+
+            <button type="submit">Filter</button>
+        </form>
+    </div>
+
+    <div class="summary-cards">
+        <div class="card">
+            <div class="card-title">Total Revenue</div>
+            <div class="card-value">₹{{ '{:,.2f}'.format(total_revenue) }}</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Total Orders Found</div>
+            <div class="card-value">{{ total_orders }}</div>
+        </div>
+    </div>
+
+    <h3>Top Ordered Items</h3>
+    <div style="margin-top: 16px; overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th class="leaderboard-rank">#</th>
+                    <th>Item Name</th>
+                    <th>Total Quantity Sold</th>
+                    <th>Total Revenue</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for name, stats in top_items %}
+                <tr>
+                    <td class="leaderboard-rank">{{ loop.index }}</td>
+                    <td style="font-weight: 500;">{{ name }}</td>
+                    <td>{{ stats.qty }} items</td>
+                    <td style="color: var(--ember);">₹{{ '{:,.2f}'.format(stats.revenue) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: var(--cream-muted);">No sales data for the selected period.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

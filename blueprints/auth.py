@@ -39,11 +39,23 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.password, password):
+            if request.form.get('remember'):
+                session.permanent = True
+            else:
+                session.permanent = False
+
             session['user_id'] = user.id
             session['username'] = username
+            session['original_user_id'] = user.parent_id if user.parent_id else user.id
 
             if user.is_admin == 1:
                 return redirect('/superadmin')
+
+            main_id = session['original_user_id']
+            family_count = User.query.filter((User.id == main_id) | (User.parent_id == main_id)).count()
+
+            if family_count > 1:
+                return redirect('/select_profile')
 
             return redirect('/dashboard')
 
@@ -88,6 +100,42 @@ def register():
         return redirect('/')
 
     return render_template('login.html', register=True)
+
+
+@auth_bp.route('/select_profile', methods=['GET', 'POST'])
+def select_profile():
+    if 'original_user_id' not in session:
+        return redirect('/')
+
+    main_id = session['original_user_id']
+    main_user = User.query.get(main_id)
+    branches = User.query.filter_by(parent_id=main_id).all()
+
+    if request.method == 'POST':
+        selected_id = int(request.form.get('profile_id'))
+        if selected_id == main_user.id or any(b.id == selected_id for b in branches):
+            selected_user = User.query.get(selected_id)
+            session['user_id'] = selected_user.id
+            session['username'] = selected_user.username
+            return redirect('/dashboard')
+        flash('Invalid profile selected', 'error')
+
+    return render_template('select_profile.html', main_user=main_user, branches=branches)
+
+
+@auth_bp.route('/switch_branch/<int:target_id>')
+def switch_branch(target_id):
+    if 'original_user_id' not in session:
+        return redirect('/')
+    
+    main_id = session['original_user_id']
+    target_user = User.query.get(target_id)
+    
+    if target_user and (target_user.id == main_id or target_user.parent_id == main_id):
+        session['user_id'] = target_user.id
+        session['username'] = target_user.username
+        
+    return redirect('/dashboard')
 
 
 @auth_bp.route('/logout')

@@ -1,4 +1,10 @@
+import { Platform } from 'react-native';
+
 export const BASE_URL = 'https://qrpro-1.onrender.com';
+
+export const FONTS = {
+  numeric: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+};
 
 export const COLORS = {
   bg: '#080807',

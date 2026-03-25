@@ -783,6 +783,15 @@
   </div>
 
   <script>
+    // --- GLOBAL DIALOG OVERRIDES ---
+    window.alert = function(msg) { 
+        if (typeof showToast === 'function') showToast(msg, true);
+        else console.log('ALERT:', msg);
+    };
+    window.confirm = function(msg) {
+        console.warn('Blocking confirm() called:', msg);
+        return true; // Auto-confirm as fallback if we missed a modal refactor
+    };
     const LOGO = "{{ logo or '' }}";
     const ADDRESS = "{{ address or '' }}";
     const UPI_QR = "{{ upi_qr or '' }}";
@@ -927,7 +936,30 @@
     }
 
     async function settleTable(tableNo) {
-      if (!confirm('Settle bill for Table ' + tableNo + '?')) return;
+      // Show beautiful confirmation modal instead of browser confirm()
+      const total = document.getElementById('table-' + tableNo)?.dataset?.total || '?';
+      showSettleModal(tableNo, total);
+    }
+
+    // ── SETTLE CONFIRMATION MODAL ─────────────────────────────
+    let _settleTarget = null;
+
+    function showSettleModal(tableNo, total) {
+      _settleTarget = tableNo;
+      document.getElementById('settleTableNo').textContent = tableNo;
+      document.getElementById('settleTotal').textContent = '₹' + parseInt(total);
+      document.getElementById('settleModal').classList.add('open');
+    }
+
+    function closeSettleModal() {
+      document.getElementById('settleModal').classList.remove('open');
+      _settleTarget = null;
+    }
+
+    async function confirmSettle() {
+      const tableNo = _settleTarget;
+      closeSettleModal();
+      if (!tableNo) return;
 
       try {
         const res = await fetch('/api/settle', {
@@ -944,14 +976,40 @@
           card.classList.add('settled');
           card.querySelector('.tc-badge').textContent = 'SETTLED';
           card.querySelector('.tc-badge').className = 'tc-badge clear';
-          setTimeout(() => location.reload(), 600);
+          showToast('✓ Table ' + tableNo + ' settled successfully!');
+          setTimeout(() => location.reload(), 1200);
         } else {
-          alert('Failed: ' + (data.error || 'Unknown error'));
+          showToast('⚠ Failed: ' + (data.error || 'Unknown error'), true);
         }
       } catch (e) {
-        alert('Network error: ' + e.message);
+        showToast('⚠ Network error. Please try again.', true);
       }
     }
+
+    // ── TOAST NOTIFICATION ────────────────────────────────────
+        function showToast(msg, isError = false) {
+        const existing = document.getElementById('appToast');
+        if (existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.id = 'appToast';
+        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' + (isError ? '#ef4444' : '#22c55e') + ';color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:all 0.3s ease;opacity:0;transform:translateX(-50%) translateY(20px);';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(-50%) translateY(0)'; }, 10);
+        setTimeout(() => { 
+            toast.style.opacity = '0'; toast.style.transform = 'translateX(-50%) translateY(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }; color: #fff;
+        padding: 12px 24px; border-radius: 12px; font-size: 14px;
+        font-weight: 600; z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        animation: fadeInUp 0.3s ease;
+      `;
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
 
     // ── WHATSAPP BILL ────────────────────────────────────────
     let pendingWaTable = null;
@@ -972,7 +1030,7 @@
     async function sendWhatsAppBill() {
       const phone = document.getElementById('waPhone').value.trim();
       if (!phone || phone.length < 10) {
-        alert("Please enter a valid phone number.");
+        showToast("Please enter a valid phone number.");
         return;
       }
 
@@ -1103,46 +1161,121 @@
         const pdfWorker = html2pdf().set(opt).from(receiptEl);
         const pdfBlob = await pdfWorker.output('blob');
 
-        const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-        const shareData = {
-          files: [file],
-          title: `Bill for Table ${tableNo}`,
-          text: `Here is your dining invoice from ${REST_NAME} (Table ${tableNo}). Thank you!`
-        };
-
         printArea.style.display = 'none'; // hide again
-        btn.innerHTML = "Send Bill";
+        btn.innerHTML = 'Send Bill';
 
-        if (navigator.canShare && navigator.canShare(shareData)) {
-          // Devices that support Web Share API (Mobile phones, Safari)
-          try {
-            await navigator.share(shareData);
-          } catch (err) {
-            console.error("Share failed", err);
-          }
+        // Build bill items for Bluetooth printing
+        const billItems = Array.from(rows).map(r => ({
+          name: r.dataset.name,
+          qty: parseInt(r.dataset.qty),
+          subtotal: parseFloat(r.dataset.price)
+        }));
+
+        if (window.ReactNativeWebView) {
+          showToast("📤 Sending bill to app...");
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result.split(',')[1];
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'SHARE_PDF',
+              base64: base64,
+              filename: opt.filename,
+              phone: waPhone,
+              restaurantName: REST_NAME,
+              tableNo: tableNo,
+              total: parseFloat(total)
+            }));
+          };
+          reader.onerror = (e) => {
+            console.error("FileReader error:", e);
+            showToast("Failed to read PDF data.", true);
+          };
+          reader.readAsDataURL(pdfBlob);
         } else {
-          // PCs and Desktops: Download the PDF and open WhatsApp Web
-          const link = document.createElement('a');
-          link.download = file.name;
-          link.href = URL.createObjectURL(pdfBlob);
-          link.click();
-
-          // Note: Specific number targeting via wa.me can't attach local files.
-          // We open the number chat so the staff can quickly paste/attach.
-          const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent("Here is your invoice. Please attach the downloaded PDF.")}`;
-          setTimeout(() => {
-            window.open(waUrl, '_blank');
-          }, 1000);
+          // ── BROWSER: download PDF and open WhatsApp Web ──────────────
+          const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
+          const shareData = { files: [file], title: `Bill for Table ${tableNo}`, text: `Invoice from ${REST_NAME}` };
+          if (navigator.canShare && navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+          } else {
+            const link = document.createElement('a');
+            link.download = file.name;
+            link.href = URL.createObjectURL(pdfBlob);
+            link.click();
+            const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent('Here is your invoice. Please attach the downloaded PDF.')}`;
+            setTimeout(() => { window.open(waUrl, '_blank'); }, 1000);
+          }
         }
 
       } catch (err) {
         console.error(err);
-        alert("Failed to generate PDF.");
+        showToast("Failed to generate PDF.");
         printArea.style.display = 'none';
         document.querySelector('.wa-send-btn').innerHTML = "Send Bill";
       }
     }
+    // ── WINDOW.OPEN OVERRIDE (route WA/external links via native) ─
+    const _origWindowOpen = window.open;
+    window.open = function(url, target, features) {
+      if (url && (url.includes('wa.me') || url.includes('whatsapp') || url.startsWith('whatsapp://'))) {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_URL', url: url }));
+          return;
+        }
+      }
+      return _origWindowOpen.call(window, url, target, features);
+    };
+
+    // ── WINDOW.PRINT OVERRIDE ─────────────────────────────────
+    const _origPrint = window.print;
+    window.print = function() {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PRINT_BILL' }));
+      } else {
+        _origPrint.call(window);
+      }
+    };
+
+    // ── AUTO-REFRESH (poll every 30 seconds) ──────────────────
+    // Only auto-reload if the user isn't interacting with a modal
+    let _autoRefreshTimer = setInterval(() => {
+      const anyOpen = document.querySelector('.pay-modal-overlay.open');
+      if (!anyOpen) {
+        location.reload();
+      }
+    }, 30000);
+
+    // Pause auto-refresh when tab is hidden
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        clearInterval(_autoRefreshTimer);
+      } else {
+        _autoRefreshTimer = setInterval(() => {
+          const anyOpen = document.querySelector('.pay-modal-overlay.open');
+          if (!anyOpen) location.reload();
+        }, 30000);
+      }
+    });
   </script>
+
+  <!-- SETTLE CONFIRMATION MODAL -->
+  <div class="pay-modal-overlay" id="settleModal">
+    <div class="pay-modal">
+      <div style="font-size:36px;margin-bottom:12px">✓</div>
+      <h3 style="margin-bottom:6px">Settle Table <span id="settleTableNo"></span>?</h3>
+      <p style="color:var(--cream-muted);font-size:14px;margin-bottom:16px">Total: <strong id="settleTotal" style="color:var(--success)"></strong></p>
+      <p style="color:var(--cream-muted);font-size:13px;margin-bottom:20px">This will mark the table as paid and clear the bill.</p>
+      <button class="tc-btn settle" style="width:100%;padding:14px;font-size:14px;border-radius:12px;margin-bottom:10px" onclick="confirmSettle()">✓ Confirm Settlement</button>
+      <button class="pay-modal-cancel" onclick="closeSettleModal()">Cancel</button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes fadeInUp {
+      from { opacity:0; transform: translateX(-50%) translateY(12px); }
+      to   { opacity:1; transform: translateX(-50%) translateY(0); }
+    }
+  </style>
 
   {% include 'embedded_fix.html' %}
   {% include 'sr_footer.html' %}

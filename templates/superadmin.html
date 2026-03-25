@@ -129,6 +129,11 @@
             color: white;
         }
 
+        .btn-branch {
+            background: #20bf6b;
+            color: white;
+        }
+
         .badge {
             padding: 4px 8px;
             border-radius: 6px;
@@ -206,7 +211,14 @@
                 {% for u in users %}
                 <tr>
                     <td>{{u.id}}</td>
-                    <td><b>{{u.username}}</b></td>
+                    <td>
+                        <b>{{u.username}}</b>
+                        {% if u.parent_id %}
+                        <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                            ↳ Branch: {{u.branch_name}}
+                        </div>
+                        {% endif %}
+                    </td>
                     <td>{{u.whatsapp}}</td>
 
                     <td>
@@ -236,6 +248,9 @@
                             <a href="/qr/{{u.username}}?type=pdf"><button class="btn-pdf">PDF</button></a>
                             <a href="/set_expiry/{{u.id}}"><button class="btn-expiry">Expiry</button></a>
                             <a href="/edit_user/{{u.id}}"><button class="btn-edit">Edit</button></a>
+                            {% if not u.parent_id %}
+                            <a href="/add_branch/{{u.id}}"><button class="btn-branch" type="button">+ Branch</button></a>
+                            {% endif %}
                         </div>
                     </td>
 

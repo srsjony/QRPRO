@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Branch</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(145deg, #eef2ff, #f8f9ff);
+        }
+        .card {
+            width: min(420px, 100%);
+            background: #fff;
+            border: 1px solid #e2e7f3;
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #1f2433;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #ccd3e8;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        button {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            padding: 14px;
+            background: #667eea;
+            color: #fff;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: all 0.2s ease;
+        }
+        button:hover {
+            background: #5366d7;
+            transform: translateY(-1px);
+        }
+        .cancel-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #666;
+            text-decoration: none;
+        }
+        .cancel-link:hover {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <form class="card" method="POST">
+        {% include 'flash_messages.html' %}
+        {% include 'csrf_field.html' %}
+        <h3>Add Branch to {{ parent.username }}</h3>
+        
+        <label>Branch Login Username</label>
+        <input name="username" placeholder="e.g. KFC_DOWNTOWN" required>
+        
+        <label>Branch Display Name</label>
+        <input name="branch_name" placeholder="e.g. Downtown Branch" required>
+        
+        <label>Branch Password</label>
+        <input type="password" name="password" placeholder="••••••••" required>
+        
+        <label>WhatsApp Number (Optional, defaults to parent)</label>
+        <input name="whatsapp" value="{{ parent.whatsapp }}">
+        
+        <button type="submit">Create Branch</button>
+        <a href="/superadmin" class="cancel-link">Cancel</a>
+    </form>
+    
+    {% include 'sr_footer.html' %}
+</body>
+</html>

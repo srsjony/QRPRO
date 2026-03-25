@@ -7,12 +7,15 @@ import {
   StyleSheet,
   Animated,
   Alert,
+  Image,
 } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS } from '../constants/config';
 
 export default function SetupScreen({ navigation }) {
   const [username, setUsername] = useState('');
+  const [loading, setLoading] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-20)).current;
 
@@ -30,15 +33,42 @@ export default function SetupScreen({ navigation }) {
         useNativeDriver: true,
       }),
     ]).start();
+
+    loadSavedUsername();
   }, []);
 
-  const handleStart = () => {
+  const loadSavedUsername = async () => {
+    try {
+      const saved = await SecureStore.getItemAsync('restaurant_username');
+      if (saved) {
+        setUsername(saved);
+        // Auto-navigate after a brief delay to show the "Connect Printer" option if needed
+        setTimeout(() => {
+          navigation.navigate('WebView', {
+            title: 'Table Ordering',
+            path: `/captain/${saved}`,
+            color: COLORS.ember,
+          });
+        }, 1000);
+      }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStart = async () => {
     const trimmed = username.trim().toUpperCase();
     if (!trimmed) {
       Alert.alert('Required', 'Please enter the restaurant username.');
       return;
     }
     
+    try {
+      await SecureStore.setItemAsync('restaurant_username', trimmed);
+    } catch (e) {}
+
     // Pass to WebView
     navigation.navigate('WebView', {
       title: 'Table Ordering',
@@ -68,9 +98,13 @@ export default function SetupScreen({ navigation }) {
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Text style={styles.icon}>🤵</Text>
-          <Text style={styles.title}>QR Captain</Text>
-          <Text style={styles.subtitle}>Enter restaurant ID to start taking orders</Text>
+          <Image
+            source={require('../assets/icon.png')}
+            style={styles.logoImg}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>RESTROMATE</Text>
+          <Text style={styles.subtitle}>Captain — Table Ordering</Text>
         </View>
 
         <View style={styles.form}>
@@ -136,9 +170,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 36,
   },
-  icon: {
-    fontSize: 56,
-    marginBottom: 12,
+  logoImg: {
+    width: 72,
+    height: 72,
+    borderRadius: 18,
+    marginBottom: 14,
   },
   title: {
     fontSize: 28,

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Profile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --obsidian: #0b0a09;
+      --coal: #141210;
+      --ash: #1e1c1a;
+      --ember: #c8873a;
+      --ember-glow: #e0a050;
+      --cream: #f2e8d9;
+      --cream-muted: #9a8a7a;
+      --divider: rgba(200, 135, 58, 0.2);
+      --ff-display: 'Cormorant Garamond', Georgia, serif;
+      --ff-body: 'DM Sans', system-ui, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--ff-body);
+      min-height: 100svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--obsidian);
+      color: var(--cream);
+      padding: 24px;
+    }
+    .form-card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--coal);
+      border: 1px solid var(--divider);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+      animation: fadeUp 0.6s var(--ease) both;
+    }
+    .form-title {
+      font-family: var(--ff-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--cream);
+      margin-bottom: 8px;
+    }
+    .form-subtitle {
+      font-size: 14px;
+      color: var(--cream-muted);
+      margin-bottom: 32px;
+    }
+    .profiles-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .profile-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--ash);
+      border: 1px solid rgba(200, 135, 58, 0.15);
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-family: var(--ff-body);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .profile-btn:hover {
+      border-color: var(--ember);
+      background: rgba(200, 135, 58, 0.05);
+      transform: translateY(-2px);
+    }
+    .profile-info {
+      text-align: left;
+    }
+    .profile-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--cream);
+      margin-bottom: 4px;
+    }
+    .profile-type {
+      font-size: 12px;
+      color: var(--ember-glow);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .arrow {
+      color: var(--cream-muted);
+      font-size: 18px;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-card">
+    <div class="form-title">Select Profile</div>
+    <div class="form-subtitle">Choose which account to manage</div>
+
+    {% include 'flash_messages.html' %}
+
+    <form method="POST" class="profiles-list">
+      {% include 'csrf_field.html' %}
+      
+      <button type="submit" name="profile_id" value="{{ main_user.id }}" class="profile-btn">
+        <div class="profile-info">
+          <div class="profile-name">{{ main_user.username }}</div>
+          <div class="profile-type">Main Account</div>
+        </div>
+        <div class="arrow">→</div>
+      </button>
+
+      {% for branch in branches %}
+      <button type="submit" name="profile_id" value="{{ branch.id }}" class="profile-btn">
+        <div class="profile-info">
+          <div class="profile-name">Branch: {{ branch.branch_name }}</div>
+          <div class="profile-type">{{ branch.username }}</div>
+        </div>
+        <div class="arrow">→</div>
+      </button>
+      {% endfor %}
+    </form>
+    
+    <div style="margin-top: 24px;">
+      <a href="/logout" style="color: var(--cream-muted); text-decoration: none; font-size: 14px;">← Cancel & Logout</a>
+    </div>
+  </div>
+
+</body>
+</html>

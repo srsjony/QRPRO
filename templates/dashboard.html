@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Plus+Jakarta+Sans:wght@700;800&display=swap"
     rel="stylesheet">
   <style>
     :root {
@@ -392,11 +392,13 @@
     }
 
     .stat-value {
-      font-family: var(--ff-display);
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--ember-glow);
+      font-family: 'Plus Jakarta Sans', system-ui, monospace;
+      font-size: 40px;
+      font-weight: 800;
+      color: var(--sc-color, var(--ember-glow));
       line-height: 1;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
     }
 
     /* ── MENU LIST ───────────────────────────── */
@@ -799,6 +801,15 @@
   </div>
 
   <script>
+    // --- GLOBAL DIALOG OVERRIDES ---
+    window.alert = function(msg) { 
+        if (typeof showToast === 'function') showToast(msg, true);
+        else console.log('ALERT:', msg);
+    };
+    window.confirm = function(msg) {
+        console.warn('Blocking confirm() called:', msg);
+        return true; // Auto-confirm as fallback if we missed a modal refactor
+    };
     function toggleSection(id, headerEl) {
       const wrapper = document.getElementById(id);
       wrapper.classList.toggle('collapsed');
@@ -808,6 +819,15 @@
 
   {% include 'embedded_fix.html' %}
   {% include 'sr_footer.html' %}
-</body>
+<script>
+    // --- GLOBAL DIALOG OVERRIDES ---
+    window.alert = function(msg) { 
+        if (typeof showToast === 'function') showToast(msg, true);
+        else console.log('ALERT:', msg);
+    };
+    window.confirm = function(msg) {
+        console.warn('Blocking confirm() called:', msg);
+        return true; // Auto-confirm as fallback if we missed a modal refactor
+    };setInterval(() => { if (!window.location.search.includes("modal")) location.reload(); }, 60000);</script>`r`n</body>
 
 </html>

@@ -176,7 +176,10 @@ def inventory():
 def dashboard():
     # If not embedded, serve the software wrapper layout
     if not request.args.get('embedded'):
-        return render_template('software_layout.html')
+        # Pass family information for the Branch switcher
+        main_id = session.get('original_user_id', session['user_id'])
+        family = User.query.filter((User.id == main_id) | (User.parent_id == main_id)).all()
+        return render_template('software_layout.html', family=family, current_user_id=session['user_id'])
 
     data = Menu.query.filter_by(user_id=session['user_id']).all()
     user = db.session.get(User, session['user_id'])
@@ -608,6 +611,58 @@ def order_history():
                            total_orders=total_orders,
                            filter_month=month,
                            filter_year=year)
+
+
+# ================= SALES REPORT =================
+@menu_bp.route('/sales_report')
+@login_required
+def sales_report():
+    main_id = session.get('original_user_id', session['user_id'])
+    family = User.query.filter((User.id == main_id) | (User.parent_id == main_id)).all()
+    
+    branch_id = request.args.get('branch_id', type=int)
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+    
+    if branch_id and any(f.id == branch_id for f in family):
+        target_ids = [branch_id]
+    else:
+        target_ids = [f.id for f in family]
+        
+    query = Order.query.filter(Order.user_id.in_(target_ids), Order.status != 'cancelled')
+    
+    if year:
+        query = query.filter(db.extract('year', Order.created_at) == year)
+    if month:
+        query = query.filter(db.extract('month', Order.created_at) == month)
+        
+    orders = query.all()
+    total_revenue = sum(o.total for o in orders)
+    total_orders = len(orders)
+    
+    from collections import defaultdict
+    item_stats = defaultdict(lambda: {'qty': 0, 'revenue': 0})
+    
+    for o in orders:
+        for oi in o.order_items:
+            item_stats[oi.item_name]['qty'] += oi.quantity
+            item_stats[oi.item_name]['revenue'] += oi.price * oi.quantity
+            
+    sort_by = request.args.get('sort', 'qty')
+    if sort_by == 'revenue':
+        top_items = sorted(item_stats.items(), key=lambda x: x[1]['revenue'], reverse=True)
+    else:
+        top_items = sorted(item_stats.items(), key=lambda x: x[1]['qty'], reverse=True)
+        
+    return render_template('sales_report.html',
+                           family=family,
+                           total_revenue=total_revenue,
+                           total_orders=total_orders,
+                           top_items=top_items,
+                           filter_branch=branch_id,
+                           filter_month=month,
+                           filter_year=year,
+                           sort_by=sort_by)
 
 
 # ================= BILLING =================

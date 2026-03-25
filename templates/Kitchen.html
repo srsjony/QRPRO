@@ -694,6 +694,15 @@
 
   <!-- NOTIFICATION AUDIO (silent oscillator — no external file needed) -->
   <script>
+    // --- GLOBAL DIALOG OVERRIDES ---
+    window.alert = function(msg) { 
+        if (typeof showToast === 'function') showToast(msg, true);
+        else console.log('ALERT:', msg);
+    };
+    window.confirm = function(msg) {
+        console.warn('Blocking confirm() called:', msg);
+        return true; // Auto-confirm as fallback if we missed a modal refactor
+    };
     const RESTAURANT = '{{username}}';
     const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
     let orders = [];
@@ -770,11 +779,20 @@
     }
 
     // ── TOAST ─────────────────────────────────
-    function showToast(table, itemCount) {
-      const wrap = document.getElementById('toastWrap');
-      const el = document.createElement('div');
-      el.className = 'toast';
-      el.innerHTML = `<strong>🔔 New Order — Table ${table}</strong>${itemCount} item${itemCount !== 1 ? 's' : ''}`;
+        function showToast(msg, isError = false) {
+        const existing = document.getElementById('appToast');
+        if (existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.id = 'appToast';
+        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' + (isError ? '#ef4444' : '#22c55e') + ';color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:all 0.3s ease;opacity:0;transform:translateX(-50%) translateY(20px);';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(-50%) translateY(0)'; }, 10);
+        setTimeout(() => { 
+            toast.style.opacity = '0'; toast.style.transform = 'translateX(-50%) translateY(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }</strong>${itemCount} item${itemCount !== 1 ? 's' : ''}`;
       wrap.appendChild(el);
       setTimeout(() => {
         el.style.animation = 'toastOut 0.3s ease forwards';
@@ -899,11 +917,11 @@
         card.className = `order-card status-${order.status}${isNew ? ' new-flash' : ''}`;
 
         const actionBtns = order.status === 'pending'
-          ? `<button class="action-btn" onclick="if(confirm('Are you sure you want to cancel this order?')) setStatus(${order.id},'cancelled')" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">✕ Cancel</button>
+          ? `<button class="action-btn" onclick="showCancelModal(${order.id})" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">✕ Cancel</button>
          <button class="action-btn btn-preparing" onclick="setStatus(${order.id},'preparing')">🔥 Start</button>
          <button class="action-btn btn-done" onclick="setStatus(${order.id},'done')">✓ Done</button>`
           : `<button class="action-btn btn-undo" onclick="setStatus(${order.id},'pending')">↩ Back</button>
-         <button class="action-btn" onclick="if(confirm('Are you sure you want to cancel this order?')) setStatus(${order.id},'cancelled')" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">✕ Cancel</button>
+         <button class="action-btn" onclick="showCancelModal(${order.id})" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)">✕ Cancel</button>
          <button class="action-btn btn-done" onclick="setStatus(${order.id},'done')">✓ Done</button>`;
 
         card.innerHTML = `
@@ -964,7 +982,7 @@
             hasNew = true;
             knownIds.add(order.id);
             if (knownIds.size > 1) { // don't alert on initial load
-              showToast(order.table, order.items.length);
+              showOrderToast(order.table, order.items.length);
               ping();
             }
           }
@@ -1004,9 +1022,46 @@
     socket.on("order_updated", () => { fetchOrders(); });
     socket.on("table_settled", () => { fetchOrders(); });
 
-    setInterval(updateTimers, 10000); // update timers every 10s
+    setInterval(updateTimers, 10000); setInterval(fetchOrders, 30000); // update timers every 10s
   </script>
 
+
+  <!-- CANCEL ORDER MODAL -->
+  <div id="cancelModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);z-index:9000;align-items:center;justify-content:center;">
+    <div style="background:#141210;border:1px solid rgba(239,68,68,0.3);border-radius:20px;padding:28px 24px;max-width:320px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+      <div style="font-size:40px;margin-bottom:12px">🗑</div>
+      <h3 style="color:#f2e8d9;font-size:18px;font-weight:700;margin-bottom:8px">Cancel Order?</h3>
+      <p style="color:#9a8a7a;font-size:14px;margin-bottom:24px">This will permanently remove the order from the kitchen queue.</p>
+      <button onclick="confirmCancelOrder()" style="width:100%;padding:13px;background:#ef4444;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;letter-spacing:0.05em">✕ Yes, Cancel Order</button>
+      <button onclick="closeCancelModal()" style="background:none;border:none;color:#9a8a7a;font-size:13px;cursor:pointer;padding:6px">Keep Order</button>
+    </div>
+  </div>
+  <script>
+    // --- GLOBAL DIALOG OVERRIDES ---
+    window.alert = function(msg) { 
+        if (typeof showToast === 'function') showToast(msg, true);
+        else console.log('ALERT:', msg);
+    };
+    window.confirm = function(msg) {
+        console.warn('Blocking confirm() called:', msg);
+        return true; // Auto-confirm as fallback if we missed a modal refactor
+    };
+    let _cancelOrderId = null;
+    function showCancelModal(id) {
+      _cancelOrderId = id;
+      const m = document.getElementById('cancelModal');
+      m.style.display = 'flex';
+    }
+    function closeCancelModal() {
+      document.getElementById('cancelModal').style.display = 'none';
+      _cancelOrderId = null;
+    }
+    function confirmCancelOrder() {
+      const id = _cancelOrderId;
+      closeCancelModal();
+      if (id !== null) setStatus(id, 'cancelled');
+    }
+  </script>
   {% include 'embedded_fix.html' %}
   {% include 'sr_footer.html' %}
 </body>

@@ -36,7 +36,9 @@ def superadmin():
             "username": u.username,
             "whatsapp": u.whatsapp,
             "expiry": u.expiry,
-            "menu_count": menu_counts.get(u.id, 0)
+            "menu_count": menu_counts.get(u.id, 0),
+            "parent_id": u.parent_id,
+            "branch_name": u.branch_name
         })
 
     return render_template("superadmin.html", users=user_data, today=str(date.today()))
@@ -95,3 +97,35 @@ def edit_user(id):
         return redirect('/superadmin')
 
     return render_template('edit_user.html', user=user)
+
+@admin_bp.route('/add_branch/<int:parent_id>', methods=['GET', 'POST'])
+@admin_required
+def add_branch(parent_id):
+    parent = User.query.get_or_404(parent_id)
+    if request.method == 'POST':
+        username = request.form['username'].strip().upper()
+        branch_name = request.form['branch_name'].strip()
+        raw_password = request.form['password']
+        whatsapp = request.form.get('whatsapp', parent.whatsapp).strip()
+        
+        from werkzeug.security import generate_password_hash
+        if not re.match(r'^[A-Z0-9_]+$', username):
+            abort(400, description='Username can only contain letters, numbers, and underscores.')
+            
+        if User.query.filter_by(username=username).first():
+            abort(400, description='Username already exists.')
+            
+        password = generate_password_hash(raw_password)
+        
+        branch = User(username=username, password=password, whatsapp=whatsapp,
+                      is_admin=0, parent_id=parent.id, branch_name=branch_name,
+                      expiry=parent.expiry)
+        db.session.add(branch)
+        db.session.commit()
+        
+        from blueprints.auth import seed_menu
+        seed_menu(branch.id)
+        
+        return redirect('/superadmin')
+        
+    return render_template('add_branch.html', parent=parent)

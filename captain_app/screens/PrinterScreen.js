@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { BluetoothManager } from 'react-native-thermal-receipt-printer';
 import { COLORS } from '../constants/config';
+import { PermissionsAndroid, Platform } from 'react-native';
 
 export default function PrinterScreen({ navigation }) {
   const [devices, setDevices] = useState([]);
@@ -21,8 +22,37 @@ export default function PrinterScreen({ navigation }) {
     initBluetooth();
   }, []);
 
+  const requestPermissions = async () => {
+    if (Platform.OS === 'android') {
+      if (Platform.Version >= 31) {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]);
+        return (
+          granted['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.BLUETOOTH_CONNECT'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED
+        );
+      } else {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
+    }
+    return true;
+  };
+
   const initBluetooth = async () => {
     try {
+      const hasPermission = await requestPermissions();
+      if (!hasPermission) {
+        Alert.alert('Permission Denied', 'Bluetooth and Location permissions are required to scan for printers.');
+        return;
+      }
+
       const isEnabled = await BluetoothManager.isBluetoothEnabled();
       if (!isEnabled) {
         Alert.alert('Bluetooth Disabled', 'Please turn on Bluetooth to connect to your printer.');
