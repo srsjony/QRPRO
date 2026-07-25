@@ -8,5 +8,5 @@ services:
     healthCheckPath: /
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.19
+        value: 3.11.11
     autoDeploy: true
