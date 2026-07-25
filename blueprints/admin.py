@@ -65,13 +65,21 @@ def delete_user(id):
 @admin_bp.route('/reset_user/<int:id>', methods=['POST'])
 @admin_required
 def reset_user(id):
-    """Reset a user by clearing out all their old orders."""
+    """Reset a user by clearing out all their old orders. If main account, clears branch orders too."""
     user = User.query.get_or_404(id)
-    # Clear all orders for this user
-    Order.query.filter_by(user_id=id).delete()
+    
+    if not user.parent_id:
+        family_ids = [u.id for u in User.query.filter((User.id == id) | (User.parent_id == id)).all()]
+    else:
+        family_ids = [id]
+        
+    # Explicitly load and delete orders to trigger SQLAlchemy cascade on OrderItems
+    orders_to_delete = Order.query.filter(Order.user_id.in_(family_ids)).all()
+    for o in orders_to_delete:
+        db.session.delete(o)
     
     db.session.commit()
-    flash(f'User {user.username} has been reset (All orders wiped).', 'success')
+    flash(f'User {user.username} (and any branches) has been reset (All orders wiped).', 'success')
     return redirect('/superadmin')
 
 

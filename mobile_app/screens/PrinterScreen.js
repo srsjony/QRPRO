@@ -41,7 +41,7 @@ export default function PrinterScreen({ navigation, route }) {
       if (!allowed) {
         setMessage(
           Platform.OS === 'android' && Platform.Version >= 31
-            ? 'Nearby devices permission is required to find your printer. Enable it in Settings › Apps › QR Captain › Permissions.'
+            ? 'Nearby devices permission is required to find your printer. Enable it in Settings › Apps › Restromate › Permissions.'
             : 'Location permission is required to discover Bluetooth printers.'
         );
         return;

@@ -3,6 +3,7 @@ from models import db, User, Menu, Order, OrderItem
 from datetime import datetime
 from decimal import Decimal
 from sqlalchemy.orm import selectinload
+import urllib.parse
 
 from extensions import socketio
 from pricing import parse_price
@@ -182,12 +183,44 @@ def table_status(username):
     active_orders = Order.query.filter(
         Order.user_id == user.id,
         Order.status.notin_(['settled', 'cancelled'])
-    ).all()
+    ).options(selectinload(Order.order_items)).all()
 
-    # Dictionary: table_no -> set of statuses. Just simple "occupied" if any order exists.
-    occupied_tables = {o.table_no: "occupied" for o in active_orders}
+    occupied_tables = {}
+    for o in active_orders:
+        t_no = str(o.table_no)
+        if t_no not in occupied_tables:
+            occupied_tables[t_no] = {
+                "status": "occupied",
+                "table_no": t_no,
+                "total": 0.0,
+                "item_count": 0,
+                "items": [],
+                "order_ids": [],
+                "created_at": o.created_at.strftime('%I:%M %p')
+            }
+
+        occupied_tables[t_no]["total"] += float(o.total or 0)
+        occupied_tables[t_no]["order_ids"].append(o.id)
+
+        for oi in o.order_items:
+            occupied_tables[t_no]["item_count"] += oi.quantity
+            found = False
+            for existing in occupied_tables[t_no]["items"]:
+                if existing["name"] == oi.item_name:
+                    existing["qty"] += oi.quantity
+                    existing["subtotal"] += (oi.price * oi.quantity)
+                    found = True
+                    break
+            if not found:
+                occupied_tables[t_no]["items"].append({
+                    "name": oi.item_name,
+                    "qty": oi.quantity,
+                    "price": oi.price,
+                    "subtotal": oi.price * oi.quantity
+                })
 
     return jsonify({"tables": occupied_tables})
+
 
 
 # ================= UPDATE ORDER STATUS =================
@@ -298,3 +331,260 @@ def kitchen(username):
     if not user:
         return "Not Found", 404
     return render_template('Kitchen.html', username=user.username)
+
+
+# ================= PRINT BILL =================
+@api_bp.route('/api/print_bill', methods=['POST'])
+def print_bill():
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "No data"}), 400
+    
+    username = data.get('username', '').strip().upper()
+    table_no = data.get('table', '').strip()
+    pay_method = data.get('pay_method', 'cash')
+    
+    if not username or not table_no:
+        return jsonify({"error": "Missing fields"}), 400
+    
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    orders = Order.query.filter(
+        Order.user_id == user.id,
+        Order.table_no == table_no,
+        Order.status.notin_(['settled', 'cancelled'])
+    ).all()
+    
+    if not orders:
+        return jsonify({"error": "No active orders for this table"}), 404
+    
+    items_map = {}
+    total = 0
+    
+    for o in orders:
+        for oi in o.order_items:
+            key = oi.item_name
+            if key in items_map:
+                items_map[key]['qty'] += oi.quantity
+                items_map[key]['subtotal'] += (oi.price * oi.quantity)
+            else:
+                items_map[key] = {
+                    'name': oi.item_name,
+                    'qty': oi.quantity,
+                    'price': oi.price,
+                    'subtotal': oi.price * oi.quantity
+                }
+            total += (oi.price * oi.quantity)
+    
+    import random
+    import datetime
+    bill_no = random.randint(100, 999)
+    now = datetime.datetime.now()
+    date_str = now.strftime("%d-%b-%Y")
+    time_str = now.strftime("%I:%M %p")
+    
+    lines = []
+    lines.append(f"{'='*32}")
+    lines.append(f"** {user.username.upper()} **")
+    if user.address:
+        lines.append(f"{user.address[:32]}")
+    lines.append(f"{'='*32}")
+    lines.append(f"Bill No : {bill_no}")
+    lines.append(f"Date    : {date_str}")
+    lines.append(f"Table   : {table_no}")
+    lines.append(f"Time    : {time_str}")
+    lines.append(f"{'-'*32}")
+    lines.append(f"{'Item':<18} {'Qty':>4} {'Amt':>8}")
+    lines.append(f"{'-'*32}")
+    
+    for item in items_map.values():
+        name = item['name'][:16]
+        qty = item['qty']
+        amt = f"{item['subtotal']:.2f}"
+        lines.append(f"{name:<18} {qty:>4} {amt:>8}")
+    
+    lines.append(f"{'-'*32}")
+    lines.append(f"{'TOTAL':.<24} Rs.{total:.2f}")
+    lines.append(f"{'='*32}")
+    lines.append(f"Payment : {pay_method.upper()}")
+    lines.append(f"{'='*32}")
+    lines.append(f"  Thank you! Visit again!  ")
+    lines.append("")
+    lines.append("")
+    
+    return jsonify({
+        "success": True,
+        "bill_text": "\n".join(lines),
+        "items": list(items_map.values()),
+        "total": total,
+        "bill_no": bill_no,
+        "date": date_str,
+        "time": time_str
+    })
+
+
+# ================= SEND WHATSAPP BILL =================
+@api_bp.route('/api/send_whatsapp', methods=['POST'])
+def send_whatsapp():
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "No data"}), 400
+    
+    username = data.get('username', '').strip().upper()
+    table_no = data.get('table', '').strip()
+    phone = data.get('phone', '').strip()
+    
+    if not username or not table_no or not phone:
+        return jsonify({"error": "Missing fields"}), 400
+    
+    import re
+    phone = re.sub(r'[^0-9]', '', phone)
+    if len(phone) == 10:
+        phone = "91" + phone
+    
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    orders = Order.query.filter(
+        Order.user_id == user.id,
+        Order.table_no == table_no,
+        Order.status.notin_(['settled', 'cancelled'])
+    ).all()
+    
+    if not orders:
+        return jsonify({"error": "No active orders for this table"}), 404
+    
+    import random
+    import datetime
+    bill_no = random.randint(100, 999)
+    now = datetime.datetime.now()
+    date_str = now.strftime("%d-%b-%Y")
+    time_str = now.strftime("%I:%M %p")
+    
+    items_map = {}
+    total = 0
+    
+    for o in orders:
+        for oi in o.order_items:
+            key = oi.item_name
+            if key in items_map:
+                items_map[key]['qty'] += oi.quantity
+                items_map[key]['subtotal'] += (oi.price * oi.quantity)
+            else:
+                items_map[key] = {
+                    'name': oi.item_name,
+                    'qty': oi.quantity,
+                    'price': oi.price,
+                    'subtotal': oi.price * oi.quantity
+                }
+            total += (oi.price * oi.quantity)
+    
+    items_text = "\n".join([
+        f"- {item['qty']}x {item['name']}: Rs.{item['subtotal']:.2f}"
+        for item in items_map.values()
+    ])
+    
+    message = f"*INVOICE - {user.username.upper()}*\n"
+    message += f"Bill No: {bill_no}\n"
+    message += f"Table: {table_no}\n"
+    message += f"Date: {date_str}, {time_str}\n\n"
+    message += f"*ITEMS:*\n{items_text}\n\n"
+    message += f"*TOTAL: Rs.{total:.2f}*\n\n"
+    if user.address:
+        message += f"Address: {user.address}\n"
+    message += "Thank you for dining with us!"
+    
+    wa_url = f"https://wa.me/{phone}?text={urllib.parse.quote(message)}"
+    
+    return jsonify({
+        "success": True,
+        "whatsapp_url": wa_url,
+        "message": message
+    })
+
+
+# ================= PRINT KOT =================
+@api_bp.route('/api/print_kot', methods=['POST'])
+def print_kot():
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "No data"}), 400
+
+    username = data.get('username', '').strip().upper()
+    table_no = data.get('table', '').strip()
+
+    if not username or not table_no:
+        return jsonify({"error": "Missing fields"}), 400
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    orders = Order.query.filter(
+        Order.user_id == user.id,
+        Order.table_no == table_no,
+        Order.status.notin_(['settled', 'cancelled'])
+    ).all()
+
+    if not orders:
+        return jsonify({"error": "No active orders for this table"}), 404
+
+    import random
+    import datetime
+    kot_no = random.randint(100, 999)
+    now = datetime.datetime.now()
+    date_str = now.strftime("%d-%b-%Y")
+    time_str = now.strftime("%I:%M %p")
+
+    items_map = {}
+    notes_list = []
+
+    for o in orders:
+        if o.notes:
+            notes_list.append(o.notes)
+        for oi in o.order_items:
+            key = oi.item_name
+            if key in items_map:
+                items_map[key]['qty'] += oi.quantity
+            else:
+                items_map[key] = {
+                    'name': oi.item_name,
+                    'qty': oi.quantity
+                }
+
+    lines = []
+    lines.append(f"{'='*32}")
+    lines.append(f"** KITCHEN ORDER TICKET **")
+    lines.append(f"{'='*32}")
+    lines.append(f"KOT No  : #{kot_no}")
+    lines.append(f"Table   : TABLE {table_no}")
+    lines.append(f"Time    : {date_str} {time_str}")
+    lines.append(f"{'-'*32}")
+    lines.append(f"{'Item':<24} {'Qty':>6}")
+    lines.append(f"{'-'*32}")
+
+    for item in items_map.values():
+        name = item['name'][:22]
+        qty = item['qty']
+        lines.append(f"{name:<24} {qty:>6}")
+
+    lines.append(f"{'-'*32}")
+    if notes_list:
+        lines.append(f"NOTES: {', '.join(notes_list)}")
+        lines.append(f"{'-'*32}")
+    lines.append("")
+    lines.append("")
+
+    return jsonify({
+        "success": True,
+        "kot_text": "\n".join(lines),
+        "items": list(items_map.values()),
+        "kot_no": kot_no,
+        "table": table_no,
+        "date": date_str,
+        "time": time_str
+    })
+

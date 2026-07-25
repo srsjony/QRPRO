@@ -681,20 +681,26 @@
 
 <body>
 
-  {% if not request.args.get('embedded') %}
-  <nav class="nav">
+  <nav class="nav" style="height: auto; min-height: 62px; flex-wrap: wrap; padding: 12px 24px; gap: 12px;">
     <span class="nav-brand">Billing</span>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
       <a class="nav-chip" href="/dashboard">← Dashboard</a>
     </div>
   </nav>
-  {% endif %}
 
   <div class="page">
-    <div class="page-header">
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap;">
       <div>
         <div class="page-title">Table-Wise Billing</div>
         <div class="page-subtitle">Today's active tables — {{today}}</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top: 10px;">
+        <button class="nav-chip" id="btnConnectSerial" onclick="connectSerialPrinter()" style="border-color:#60a5fa; color:#60a5fa; padding:7px 10px;" title="Connect USB/COM Printer">🔌 COM Port</button>
+        <button class="nav-chip" id="btnConnectBT" onclick="connectBluetoothPrinter()" style="border-color:#818cf8; color:#818cf8; padding:7px 10px;" title="Connect Bluetooth Printer">📶 Bluetooth</button>
+        <div style="font-size:12px; color:var(--cream-muted); display:flex; align-items:center; gap:4px; margin: 0 4px;" class="no-print">
+          <input type="checkbox" id="useBrowserPrint" style="width:14px;height:14px;cursor:pointer;">
+          Browser
+        </div>
       </div>
     </div>
 
@@ -798,142 +804,624 @@
     const REST_NAME = "{{ username }}";
     const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
 
-    let pendingTable = null;
+    // --- THERMAL PRINTER SUPPORT (Serial COM) ---
+    let serialPort = null;
+    let writer = null;
+    let printerConnected = false;
+    
+    // Alternative: Bluetooth
+    let bluetoothDevice = null;
+    let writeCharacteristic = null;
 
+    // Common thermal printer service UUIDs
+    const PRINTER_SERVICES = [
+      '00001800-0000-1000-8000-00805f9b34fb', // Generic SPP
+      '0000fee0-0000-1000-8000-00805f9b34fb', // Many thermal printers
+      '0000fff0-0000-1000-8000-00805f9b34fb', // Common printer service
+      '0000fff0-0000-1000-8000-00805f9b34fb',
+    ];
+
+    const PRINTER_WRITE_CHARS = [
+      '00002a00-0000-1000-8000-00805f9b34fb',
+      '0000fee1-0000-1000-8000-00805f9b34fb',
+      '0000fff1-0000-1000-8000-00805f9b34fb',
+    ];
+
+    // ESC/POS Commands
+    const ESC = 0x1B;
+    const GS = 0x1D;
+    const LF = 0x0A;
+
+
+    async function getImageData(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const MAX_WIDTH = 256; 
+          let width = img.width;
+          let height = img.height;
+          if (width > MAX_WIDTH) {
+            height = Math.floor(height * (MAX_WIDTH / width));
+            width = MAX_WIDTH;
+          }
+          width = Math.floor(width / 8) * 8;
+          canvas.width = width;
+          canvas.height = height;
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve({
+            data: ctx.getImageData(0, 0, width, height).data,
+            width: width,
+            height: height
+          });
+        };
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+
+    async function getEscPosImage(url) {
+      try {
+        const { data, width, height } = await getImageData(url);
+        const xL = (width / 8) % 256;
+        const xH = Math.floor((width / 8) / 256);
+        const yL = height % 256;
+        const yH = Math.floor(height / 256);
+        
+        const bytes = [0x1D, 0x76, 0x30, 0x00, xL, xH, yL, yH];
+
+        let darkBorderPixels = 0;
+        let totalBorderPixels = 0;
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            if (x < 2 || x > width - 3 || y < 2 || y > height - 3) {
+              const idx = (y * width + x) * 4;
+              const r = data[idx], g = data[idx+1], b_val = data[idx+2];
+              const brightness = r * 0.299 + g * 0.587 + b_val * 0.114;
+              if (brightness < 128) darkBorderPixels++;
+              totalBorderPixels++;
+            }
+          }
+        }
+        
+        const shouldInvert = darkBorderPixels > (totalBorderPixels * 0.6);
+
+        const gray = new Uint8Array(width * height);
+        for (let i = 0; i < width * height; i++) {
+          const idx = i * 4;
+          const r = data[idx], g = data[idx+1], b_val = data[idx+2], a = data[idx+3];
+          let brightness = 255;
+          if (a > 128) {
+            brightness = r * 0.299 + g * 0.587 + b_val * 0.114;
+          }
+          if (shouldInvert) {
+            brightness = 255 - brightness;
+          }
+          gray[i] = brightness;
+        }
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const i = y * width + x;
+            const oldPixel = gray[i];
+            const newPixel = oldPixel < 128 ? 0 : 255;
+            gray[i] = newPixel;
+            const quantError = oldPixel - newPixel;
+            
+            if (x + 1 < width) gray[i + 1] = Math.min(255, Math.max(0, gray[i + 1] + quantError * 7 / 16));
+            if (y + 1 < height) {
+              if (x > 0) gray[i + width - 1] = Math.min(255, Math.max(0, gray[i + width - 1] + quantError * 3 / 16));
+              gray[i + width] = Math.min(255, Math.max(0, gray[i + width] + quantError * 5 / 16));
+              if (x + 1 < width) gray[i + width + 1] = Math.min(255, Math.max(0, gray[i + width + 1] + quantError * 1 / 16));
+            }
+          }
+        }
+        
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x += 8) {
+            let byte = 0;
+            for (let b = 0; b < 8; b++) {
+              const val = gray[y * width + x + b];
+              if (val === 0) {
+                byte |= (1 << (7 - b));
+              }
+            }
+            bytes.push(byte);
+          }
+        }
+        return bytes;
+      } catch (e) {
+        console.error('Image processing failed', e);
+        return [];
+      }
+    }
+    function escposInit() {
+      return [ESC, 0x40];
+    }
+    
+    function escposAlignCenter() {
+      return [ESC, 0x61, 1];
+    }
+    
+    function escposAlignLeft() {
+      return [ESC, 0x61, 0];
+    }
+    
+    function escposBold(on) {
+      return [ESC, 0x45, on ? 1 : 0];
+    }
+    
+    function escposDoubleHeight(on) {
+      return [GS, 0x21, on ? 0x01 : 0x00];
+    }
+    
+    function escposCut() {
+      return [GS, 0x56, 0];
+    }
+    
+    function escposFeedLines(n) {
+      return [ESC, 0x64, n];
+    }
+    
+    function escposText(text) {
+      const bytes = [];
+      for (let i = 0; i < text.length; i++) {
+        bytes.push(text.charCodeAt(i));
+      }
+      return bytes;
+    }
+    
+    function escposNewLine() {
+      return [LF];
+    }
+
+    async function connectPrinter() {
+      const method = document.getElementById('printMethod')?.value || 'serial';
+      
+      if (method === 'bluetooth') {
+        return await connectBluetoothPrinter();
+      } else if (method === 'serial') {
+        return await connectSerialPrinter();
+      } else {
+        showToast('Using browser print. Click Print to print.');
+        return true;
+      }
+    }
+
+    async function connectBluetoothPrinter() {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CONNECT_BLUETOOTH' }));
+        return true;
+      }
+      // Check if Web Bluetooth is available
+      if (!navigator.bluetooth) {
+        showToast('Bluetooth not supported. Use Chrome/Edge on desktop.', true);
+        return false;
+      }
+      
+      try {
+        showToast('Searching for Bluetooth devices...');
+        
+        // Request any device (no filter) - user will select
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: ['00001800-0000-1000-8000-00805f9b34fb', '0000fee0-0000-1000-8000-00805f9b34fb', '0000fff0-0000-1000-8000-00805f9b34fb']
+        });
+        
+        console.log('Selected device:', bluetoothDevice.name);
+        showToast('Connecting to ' + bluetoothDevice.name + '...');
+        
+        const server = await bluetoothDevice.gatt.connect();
+        
+        // Try to find write characteristic
+        const services = await server.getPrimaryServices();
+        
+        for (const service of services) {
+          console.log('Service:', service.uuid);
+          try {
+            const characteristics = await service.getCharacteristics();
+            for (const char of characteristics) {
+              console.log('  Char:', char.uuid, 'props:', char.properties);
+              if (char.properties.write || char.properties.writeWithoutResponse) {
+                writeCharacteristic = char;
+                console.log('Found writable characteristic!');
+                break;
+              }
+            }
+            if (writeCharacteristic) break;
+          } catch (e) {
+            console.log('Error getting characteristics:', e);
+          }
+        }
+        
+        if (!writeCharacteristic) {
+          // Try common write characteristic as fallback
+          writeCharacteristic = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb')
+            .then(s => s.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb'))
+            .catch(() => null);
+        }
+        
+        if (!writeCharacteristic) {
+          throw new Error('Could not find writable characteristic');
+        }
+        
+        printerConnected = true;
+        showToast('Printer connected: ' + bluetoothDevice.name);
+        
+        const btn = document.getElementById('btnConnectBT');
+        if (btn) {
+          btn.textContent = '🖨 ' + bluetoothDevice.name;
+          btn.style.borderColor = '#22c55e';
+          btn.style.color = '#22c55e';
+        }
+        
+        bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+          printerConnected = false;
+          showToast('Printer disconnected', true);
+          if (btn) {
+            btn.textContent = '📶 Bluetooth';
+            btn.style.borderColor = '#818cf8';
+            btn.style.color = '#818cf8';
+          }
+        });
+        
+        return true;
+      } catch (error) {
+        console.error('Bluetooth error:', error);
+        if (error.name === 'NotFoundError') {
+          showToast('No device selected', true);
+        } else {
+          showToast('Connection failed: ' + error.message, true);
+        }
+        return false;
+      }
+    }
+
+        async function compileReceiptBytes(text) {
+      let data = [...escposInit()];
+
+      if (LOGO) {
+        data = data.concat(escposAlignCenter());
+        const imgBytes = await getEscPosImage('/static/uploads/' + LOGO);
+        if (imgBytes.length > 0) {
+          data = data.concat(imgBytes);
+          data = data.concat(escposFeedLines(1));
+        }
+      }
+      
+      const lines = text.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('**') && line.endsWith('**')) {
+          data = data.concat(escposBold(true));
+          data = data.concat(escposDoubleHeight(true));
+          data = data.concat(escposAlignCenter());
+          data = data.concat(escposText(line.replace(/\*\*/g, '')));
+          data = data.concat(escposNewLine());
+          data = data.concat(escposBold(false));
+          data = data.concat(escposDoubleHeight(false));
+        } else if (line.startsWith('===') || line.startsWith('---') || line === '') {
+          data = data.concat(escposAlignCenter());
+          data = data.concat(escposText(line));
+          data = data.concat(escposNewLine());
+        } else if (line.includes('TOTAL') || line.includes('Net Amount')) {
+          data = data.concat(escposBold(true));
+          data = data.concat(escposAlignLeft());
+          data = data.concat(escposText(line));
+          data = data.concat(escposNewLine());
+          data = data.concat(escposBold(false));
+        } else {
+          data = data.concat(escposAlignLeft());
+          data = data.concat(escposText(line));
+          data = data.concat(escposNewLine());
+        }
+      }
+      
+      data = data.concat(escposFeedLines(3));
+      data = data.concat(escposCut());
+      return new Uint8Array(data);
+    }
+
+async function printViaBluetooth(text) {
+      if (!printerConnected || !writeCharacteristic) {
+        showToast('Printer not connected. Please click Connect first.', true);
+        return false;
+      }
+      
+      try {
+        const buffer = await compileReceiptBytes(text);
+        
+        if (writeCharacteristic.properties.write) {
+          await writeCharacteristic.writeValue(buffer);
+        } else if (writeCharacteristic.properties.writeWithoutResponse) {
+          await writeCharacteristic.writeValueWithoutResponse(buffer);
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('Print error:', error);
+        showToast('Print failed: ' + error.message, true);
+        printerConnected = false;
+        return false;
+      }
+    }
+
+    // --- SERIAL PORT PRINTING (COM ports) ---
+    async function connectSerialPrinter(portName) {
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CONNECT_SERIAL' }));
+        return true;
+      }
+      try {
+        if (!navigator.serial) {
+          throw new Error('Serial API not supported');
+        }
+        
+        let port;
+        if (portName) {
+          // Connect to specific port
+          port = await navigator.serial.requestPort({
+            filters: [{ usbProductId: 0x0001, usbVendorId: 0x0403 }] // Common FTDI
+          });
+        } else {
+          // Let user select
+          port = await navigator.serial.requestPort();
+        }
+        
+        await port.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: 'none' });
+        
+        serialPort = port;
+        writer = port.writable.getWriter();
+        printerConnected = true;
+        
+        const btn = document.getElementById('btnConnectSerial');
+        if (btn) {
+          btn.textContent = '🔌 COM Active';
+          btn.style.borderColor = '#22c55e';
+          btn.style.color = '#22c55e';
+        }
+        
+        port.addEventListener('disconnect', () => {
+          printerConnected = false;
+          if (btn) {
+            btn.textContent = '🔌 COM Port';
+            btn.style.borderColor = '#60a5fa';
+            btn.style.color = '#60a5fa';
+          }
+        });
+        
+        showToast('Serial printer connected!');
+        return true;
+      } catch (error) {
+        console.error('Serial error:', error);
+        showToast('Serial connection failed: ' + error.message, true);
+        return false;
+      }
+    }
+
+    async function printViaSerial(text) {
+      if (typeof serialPort === 'undefined' || !serialPort || !writer) {
+        showToast('Printer not connected. Please click Connect first.', true);
+        return false;
+      }
+      
+      try {
+        const buffer = await compileReceiptBytes(text);
+        await writer.write(buffer);
+        
+        return true;
+      } catch (error) {
+        console.error('Serial print error:', error);
+        showToast('Print failed: ' + error.message, true);
+        printerConnected = false;
+        return false;
+      }
+    }
+
+    let currentTableToPrint = null;
     function askPayment(tableNo) {
-      pendingTable = tableNo;
+      currentTableToPrint = tableNo;
       document.getElementById('payModal').classList.add('open');
     }
+    
     function closePayModal() {
       document.getElementById('payModal').classList.remove('open');
-      pendingTable = null;
+      currentTableToPrint = null;
     }
-    function confirmPrint(method) {
-      const table = pendingTable;
+    
+    function confirmPrint(payMethod) {
+      if (!currentTableToPrint) return;
+      printBill(currentTableToPrint, payMethod);
       closePayModal();
-      printBill(table, method);
     }
 
-    function printBill(tableNo, payMethod) {
-      const card = document.getElementById('table-' + tableNo);
-      const total = card.dataset.total;
-      const rows = card.querySelectorAll('.tc-item-row');
+    async function printBill(tableNo, payMethod) {
+      try {
+        const res = await fetch('/api/print_bill', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+          body: JSON.stringify({ 
+            username: REST_NAME, 
+            table: tableNo,
+            pay_method: payMethod 
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          showToast(data.error || 'Print failed', true);
+          return;
+        }
 
-      let itemsHtml = '';
-      // Generate random bill no for look
-      const billNo = Math.floor(100 + Math.random() * 900);
+        const useBrowser = document.getElementById('useBrowserPrint')?.checked || false;
+        
+        if (typeof serialPort !== 'undefined' && serialPort) {
+          const printed = await printViaSerial(data.bill_text);
+          if (printed) {
+            showToast('Printed successfully!');
+            return;
+          }
+        } else if (typeof writeCharacteristic !== 'undefined' && writeCharacteristic && printerConnected) {
+          const printed = await printViaBluetooth(data.bill_text);
+          if (printed) {
+            showToast('Printed successfully!');
+            return;
+          }
+        } else if (!useBrowser && !window.ReactNativeWebView) {
+          showToast('Printer not connected! Please click 🔌 COM Port or 📶 Bluetooth first.', true);
+          return;
+        }
+        
+        // Fall back to ReactNativeWebView
+        if (window.ReactNativeWebView) {
+          let base64Bytes = '';
+          try {
+             const rawBytes = await compileReceiptBytes(data.bill_text);
+             // Webkit safe conversion for large byte arrays
+             let binary = '';
+             for (let i = 0; i < rawBytes.byteLength; i++) {
+                 binary += String.fromCharCode(rawBytes[i]);
+             }
+             base64Bytes = window.btoa(binary);
+          } catch(e) { console.error(e); }
 
-      // Current time
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
-      const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'PRINT_BILL',
+            bill_text: data.bill_text,
+            bill_no: data.bill_no,
+            table: tableNo,
+            total: data.total,
+            logo_url: LOGO ? (window.location.origin + '/static/uploads/' + LOGO) : '',
+            raw_bytes_base64: base64Bytes
+          }));
+          showToast('Sent to printer...');
+        } else {
+          // Last resort: browser print
+          const card = document.getElementById('table-' + tableNo);
+          const total = card.dataset.total;
+          const rows = card.querySelectorAll('.tc-item-row');
 
-      let sr = 1;
-      rows.forEach(r => {
-        const qty = parseInt(r.dataset.qty);
-        const sub = parseFloat(r.dataset.price);
-        const rate = (sub / qty).toFixed(2);
-        itemsHtml += `<tr>
-      <td>${sr}</td>
-      <td>${r.dataset.name}</td>
-      <td class="td-center">${qty}</td>
-      <td class="td-right">${rate}</td>
-      <td class="td-right">${sub.toFixed(2)}</td>
-    </tr>`;
-        sr++;
-      });
+          let itemsHtml = '';
+          const billNo = data.bill_no || Math.floor(100 + Math.random() * 900);
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+          const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
 
-      let paymentHtml = '';
-      if (payMethod === 'upi' && UPI_QR) {
-        paymentHtml = `
-      <div class="receipt-payment">
-        <span class="receipt-payment-label">UPI</span>
-        <img src="/static/uploads/${UPI_QR}" class="receipt-upi-qr" alt="UPI QR">
-      </div>`;
-      } else if (payMethod === 'card') {
-        paymentHtml = `<div class="receipt-payment"><span class="receipt-payment-label">CARD</span></div>`;
-      } else if (payMethod === 'cash') {
-        paymentHtml = `<div class="receipt-payment"><span class="receipt-payment-label">CASH</span></div>`;
+          let sr = 1;
+          rows.forEach(r => {
+            const qty = parseInt(r.dataset.qty);
+            const sub = parseFloat(r.dataset.price);
+            const rate = (sub / qty).toFixed(2);
+            itemsHtml += `<tr>
+          <td>${sr}</td>
+          <td>${r.dataset.name}</td>
+          <td class="td-center">${qty}</td>
+          <td class="td-right">${rate}</td>
+          <td class="td-right">${sub.toFixed(2)}</td>
+        </tr>`;
+            sr++;
+          });
+
+          let paymentHtml = '';
+          if (payMethod === 'upi' && UPI_QR) {
+            paymentHtml = `
+          <div class="receipt-payment">
+            <span class="receipt-payment-label">UPI</span>
+            <img src="/static/uploads/${UPI_QR}" class="receipt-upi-qr" alt="UPI QR">
+          </div>`;
+          } else if (payMethod === 'card') {
+            paymentHtml = `<div class="receipt-payment"><span class="receipt-payment-label">CARD</span></div>`;
+          } else if (payMethod === 'cash') {
+            paymentHtml = `<div class="receipt-payment"><span class="receipt-payment-label">CASH</span></div>`;
+          }
+
+          let logoSrc = LOGO ? "/static/uploads/" + LOGO : "";
+          const logoHtml = logoSrc ? `<img src="${logoSrc}" class="receipt-logo" alt="logo">` : '';
+
+          let pureAddress = ADDRESS;
+          let phStr = "";
+          const phoneMatch = ADDRESS.match(/(?:Ph|Phone|Contact|Mob|Mobile)?\s*[:.-]?\s*(\+?\d{10,13})/i);
+          if (phoneMatch) {
+            phStr = "Ph. : " + phoneMatch[1];
+          }
+
+          document.getElementById('receiptContent').innerHTML = `
+        <div class="receipt-header">
+          ${logoHtml}
+          <div class="receipt-name">${REST_NAME}</div>
+          <div class="receipt-addr">${pureAddress}</div>
+        </div>
+        
+        <div class="r-divider-double"></div>
+        
+        <table class="receipt-meta">
+          <tr>
+            <td style="width:60%">Bill No. : ${billNo}</td>
+            <td style="width:40%; text-align:right;">Date : ${dateStr}</td>
+          </tr>
+          <tr>
+            <td>To, Table ${tableNo}</td>
+            <td style="text-align:right;">${timeStr}</td>
+          </tr>
+          ${phStr ? `<tr><td colspan="2">${phStr}</td></tr>` : ''}
+        </table>
+        
+        <div class="r-divider-single"></div>
+
+        <table class="receipt-items">
+          <thead>
+            <tr>
+              <th class="th-sr">Sr</th>
+              <th class="th-part">Particulars</th>
+              <th class="th-qty">Qty</th>
+              <th class="th-rate">Rate</th>
+              <th class="th-amt">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+        
+        <div class="r-divider-double"></div>
+        
+        <table class="receipt-totals">
+          <tr>
+            <td>Gross Amount</td>
+            <td class="td-right">${parseFloat(total).toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td>&nbsp;</td>
+            <td class="td-right">0.00</td>
+          </tr>
+          <tr>
+            <td class="net-amount">Net Amount</td>
+            <td class="net-amount td-right">${parseFloat(total).toFixed(2)}</td>
+          </tr>
+        </table>
+        
+        <div class="r-divider-double"></div>
+        
+        ${paymentHtml}
+        
+        <div class="receipt-footer">
+          <div># e&oe</div>
+          <div style="text-decoration: underline;">!! Please visit again !!</div>
+        </div>
+      `;
+
+          window.print();
+        }
+      } catch (err) {
+        console.error('Print error:', err);
+        showToast('Print error: ' + err.message, true);
       }
-
-      let logoSrc = LOGO ? "/static/uploads/" + LOGO : "";
-      const logoHtml = logoSrc ? `<img src="${logoSrc}" class="receipt-logo" alt="logo">` : '';
-
-      // Extract phone number from address if possible (e.g. "Ph: 9876543210")
-      let pureAddress = ADDRESS;
-      let phStr = "";
-      const phoneMatch = ADDRESS.match(/(?:Ph|Phone|Contact|Mob|Mobile)?\s*[:.-]?\s*(\+?\d{10,13})/i);
-      if (phoneMatch) {
-        phStr = "Ph. : " + phoneMatch[1];
-      }
-
-      document.getElementById('receiptContent').innerHTML = `
-    <div class="receipt-header">
-      ${logoHtml}
-      <div class="receipt-name">${REST_NAME}</div>
-      <div class="receipt-addr">${pureAddress}</div>
-    </div>
-    
-    <div class="r-divider-double"></div>
-    
-    <table class="receipt-meta">
-      <tr>
-        <td style="width:60%">Bill No. : ${billNo}</td>
-        <td style="width:40%; text-align:right;">Date : ${dateStr}</td>
-      </tr>
-      <tr>
-        <td>To, Table ${tableNo}</td>
-        <td style="text-align:right;">${timeStr}</td>
-      </tr>
-      ${phStr ? `<tr><td colspan="2">${phStr}</td></tr>` : ''}
-    </table>
-    
-    <div class="r-divider-single"></div>
-
-    <table class="receipt-items">
-      <thead>
-        <tr>
-          <th class="th-sr">Sr</th>
-          <th class="th-part">Particulars</th>
-          <th class="th-qty">Qty</th>
-          <th class="th-rate">Rate</th>
-          <th class="th-amt">Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${itemsHtml}
-      </tbody>
-    </table>
-    
-    <div class="r-divider-double"></div>
-    
-    <table class="receipt-totals">
-      <tr>
-        <td>Gross Amount</td>
-        <td class="td-right">${parseFloat(total).toFixed(2)}</td>
-      </tr>
-      <tr>
-        <td>&nbsp;</td>
-        <td class="td-right">0.00</td>
-      </tr>
-      <tr>
-        <td class="net-amount">Net Amount</td>
-        <td class="net-amount td-right">${parseFloat(total).toFixed(2)}</td>
-      </tr>
-    </table>
-    
-    <div class="r-divider-double"></div>
-    
-    ${paymentHtml}
-    
-    <div class="receipt-footer">
-      <div># e&oe</div>
-      <div style="text-decoration: underline;">!! Please visit again !!</div>
-    </div>
-  `;
-
-      window.print();
     }
+
 
     async function settleTable(tableNo) {
       // Show beautiful confirmation modal instead of browser confirm()
@@ -987,27 +1475,19 @@
     }
 
     // ── TOAST NOTIFICATION ────────────────────────────────────
-        function showToast(msg, isError = false) {
-        const existing = document.getElementById('appToast');
-        if (existing) existing.remove();
-        const toast = document.createElement('div');
-        toast.id = 'appToast';
-        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' + (isError ? '#ef4444' : '#22c55e') + ';color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:all 0.3s ease;opacity:0;transform:translateX(-50%) translateY(20px);';
-        toast.textContent = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(-50%) translateY(0)'; }, 10);
-        setTimeout(() => { 
-            toast.style.opacity = '0'; toast.style.transform = 'translateX(-50%) translateY(20px)';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }; color: #fff;
-        padding: 12px 24px; border-radius: 12px; font-size: 14px;
-        font-weight: 600; z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-        animation: fadeInUp 0.3s ease;
-      `;
+    function showToast(msg, isError = false) {
+      const existing = document.getElementById('appToast');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.id = 'appToast';
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:' + (isError ? '#ef4444' : '#22c55e') + ';color:#fff;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:all 0.3s ease;opacity:0;transform:translateX(-50%) translateY(20px);';
       toast.textContent = msg;
       document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+      setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(-50%) translateY(0)'; }, 10);
+      setTimeout(() => { 
+        toast.style.opacity = '0'; toast.style.transform = 'translateX(-50%) translateY(20px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
     }
 
 
@@ -1037,181 +1517,45 @@
       const tableNo = pendingWaTable;
       closeWaModal();
 
-      // Temporarily reveal the print area to capture it
-      const printArea = document.getElementById('printArea');
-
-      // Generate the receipt HTML the exact same way printBill does
-      const card = document.getElementById('table-' + tableNo);
-      const total = card.dataset.total;
-      const rows = card.querySelectorAll('.tc-item-row');
-
-      let itemsHtml = '';
-      const billNo = Math.floor(100 + Math.random() * 900);
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
-      const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-
-      let sr = 1;
-      rows.forEach(r => {
-        const qty = parseInt(r.dataset.qty);
-        const sub = parseFloat(r.dataset.price);
-        const rate = (sub / qty).toFixed(2);
-        itemsHtml += `<tr>
-      <td>${sr}</td>
-      <td>${r.dataset.name}</td>
-      <td class="td-center">${qty}</td>
-      <td class="td-right">${rate}</td>
-      <td class="td-right">${sub.toFixed(2)}</td>
-    </tr>`;
-        sr++;
-      });
-
-      let paymentHtml = '';
-      if (UPI_QR) {
-        paymentHtml = `
-      <div class="receipt-payment">
-        <span class="receipt-payment-label">Scan to Pay UPI</span>
-        <img src="/static/uploads/${UPI_QR}" class="receipt-upi-qr" alt="UPI QR">
-      </div>`;
-      }
-
-      let logoSrc = LOGO ? "/static/uploads/" + LOGO : "";
-      const logoHtml = logoSrc ? `<img src="${logoSrc}" class="receipt-logo" alt="logo">` : '';
-
-      let pureAddress = ADDRESS;
-      let phStr = "";
-      const phoneMatch = ADDRESS.match(/(?:Ph|Phone|Contact|Mob|Mobile)?\s*[:.-]?\s*(\+?\d{10,13})/i);
-      if (phoneMatch) {
-        phStr = "Ph. : " + phoneMatch[1];
-      }
-
-      document.getElementById('receiptContent').innerHTML = `
-    <div class="receipt-header" style="background: white; color: black; padding: 20px; font-family: sans-serif; min-width: 320px;">
-      ${logoHtml}
-      <div class="receipt-name" style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">${REST_NAME}</div>
-      <div class="receipt-addr" style="font-size: 14px;">${pureAddress}</div>
-    </div>
-    <div style="background: white; padding: 0 20px 20px; color: black; font-family: monospace;">
-      <div style="border-top: 2px dashed #ccc; margin: 10px 0;"></div>
-      <table style="width: 100%; font-size: 14px;">
-        <tr>
-          <td>Bill No: <b>${billNo}</b></td>
-          <td style="text-align: right;">Date: <b>${dateStr}</b></td>
-        </tr>
-        <tr>
-          <td>Table: <b>${tableNo}</b></td>
-          <td style="text-align: right;">Time: <b>${timeStr}</b></td>
-        </tr>
-        ${phStr ? `<tr><td colspan="2"><b>${phStr}</b></td></tr>` : ''}
-      </table>
-      <div style="border-top: 2px dashed #ccc; margin: 10px 0;"></div>
-      <table style="width: 100%; font-size: 14px; text-align: left;">
-        <thead>
-          <tr style="border-bottom: 1px solid #000;">
-            <th>Item</th>
-            <th style="text-align: center;">Qty</th>
-            <th style="text-align: right;">Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${Array.from(rows).map(r => `
-            <tr>
-              <td style="padding-top: 5px;">${r.dataset.name}</td>
-              <td style="text-align: center; padding-top: 5px;">${r.dataset.qty}</td>
-              <td style="text-align: right; padding-top: 5px;">${parseFloat(r.dataset.price).toFixed(2)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      <div style="border-top: 2px dashed #ccc; margin: 15px 0;"></div>
-      <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: bold;">
-        <span>Total Due</span>
-        <span>₹${parseFloat(total).toFixed(2)}</span>
-      </div>
-      <div style="border-top: 2px dashed #ccc; margin: 15px 0;"></div>
-      ${paymentHtml}
-      <div style="text-align: center; margin-top: 20px; font-size: 14px; font-style: italic;">Thank you for dining with us!</div>
-    </div>
-  `;
-
-      // Temporarily show it offscreen to force it to render
-      const receiptEl = document.getElementById('receiptContent');
-      printArea.style.display = 'block';
-      printArea.style.position = 'absolute';
-      printArea.style.top = '-9999px';
+      const btn = document.querySelector('.wa-send-btn');
+      btn.innerHTML = "Sending...";
 
       try {
-        const btn = document.querySelector('.wa-send-btn');
-        btn.innerHTML = "Generating PDF...";
-
-        // Setup Web Share API standard phone formatting (no spaces/plus)
-        let waPhone = phone.replace(/[^0-9]/g, '');
-        if (waPhone.length === 10) waPhone = "91" + waPhone; // assume India default
-
-        // Configure PDF generation
-        const opt = {
-          margin: [10, 10, 10, 10], // pt
-          filename: `Invoice_Table_${tableNo}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'pt', format: 'a5', orientation: 'portrait' }
-        };
-
-        // Generate PDF Blob
-        const pdfWorker = html2pdf().set(opt).from(receiptEl);
-        const pdfBlob = await pdfWorker.output('blob');
-
-        printArea.style.display = 'none'; // hide again
-        btn.innerHTML = 'Send Bill';
-
-        // Build bill items for Bluetooth printing
-        const billItems = Array.from(rows).map(r => ({
-          name: r.dataset.name,
-          qty: parseInt(r.dataset.qty),
-          subtotal: parseFloat(r.dataset.price)
-        }));
-
-        if (window.ReactNativeWebView) {
-          showToast("📤 Sending bill to app...");
-          const reader = new FileReader();
-          reader.onload = () => {
-            const base64 = reader.result.split(',')[1];
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'SHARE_PDF',
-              base64: base64,
-              filename: opt.filename,
-              phone: waPhone,
-              restaurantName: REST_NAME,
-              tableNo: tableNo,
-              total: parseFloat(total)
-            }));
-          };
-          reader.onerror = (e) => {
-            console.error("FileReader error:", e);
-            showToast("Failed to read PDF data.", true);
-          };
-          reader.readAsDataURL(pdfBlob);
-        } else {
-          // ── BROWSER: download PDF and open WhatsApp Web ──────────────
-          const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
-          const shareData = { files: [file], title: `Bill for Table ${tableNo}`, text: `Invoice from ${REST_NAME}` };
-          if (navigator.canShare && navigator.canShare(shareData)) {
-            await navigator.share(shareData);
-          } else {
-            const link = document.createElement('a');
-            link.download = file.name;
-            link.href = URL.createObjectURL(pdfBlob);
-            link.click();
-            const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent('Here is your invoice. Please attach the downloaded PDF.')}`;
-            setTimeout(() => { window.open(waUrl, '_blank'); }, 1000);
-          }
+        const res = await fetch('/api/send_whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+          body: JSON.stringify({ 
+            username: REST_NAME, 
+            table: tableNo,
+            phone: phone 
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          showToast(data.error || 'Failed to send WhatsApp', true);
+          btn.innerHTML = 'Send Bill';
+          return;
         }
-
+        
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'OPEN_URL',
+            url: data.whatsapp_url
+          }));
+          showToast('Opening WhatsApp...');
+        } else {
+          window.open(data.whatsapp_url, '_blank');
+          showToast('Opening WhatsApp...');
+        }
+        
+        btn.innerHTML = 'Send Bill';
+        
       } catch (err) {
-        console.error(err);
-        showToast("Failed to generate PDF.");
-        printArea.style.display = 'none';
-        document.querySelector('.wa-send-btn').innerHTML = "Send Bill";
+        console.error('WhatsApp error:', err);
+        showToast('Error: ' + err.message, true);
+        btn.innerHTML = 'Send Bill';
       }
     }
     // ── WINDOW.OPEN OVERRIDE (route WA/external links via native) ─

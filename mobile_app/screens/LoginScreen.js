@@ -14,9 +14,12 @@ import {
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
-import { COLORS, BASE_URL, FONTS } from '../constants/config';
+import { COLORS, FONTS, STORAGE_KEYS } from '../constants/config';
 
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen({ navigation, route }) {
+  // Set when we bounce back here after a failed auto-login: without this the
+  // saved credentials would be replayed immediately and loop forever.
+  const skipAutoLogin = route?.params?.skipAutoLogin === true;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
@@ -36,15 +39,15 @@ export default function LoginScreen({ navigation }) {
 
   const loadCredentials = async () => {
     try {
-      const savedUser = await SecureStore.getItemAsync('username');
-      const savedPass = await SecureStore.getItemAsync('password');
-      const savedRemember = await SecureStore.getItemAsync('remember');
+      const savedUser = await SecureStore.getItemAsync(STORAGE_KEYS.username);
+      const savedPass = await SecureStore.getItemAsync(STORAGE_KEYS.password);
+      const savedRemember = await SecureStore.getItemAsync(STORAGE_KEYS.remember);
 
       if (savedUser && savedPass && savedRemember === 'true') {
         setUsername(savedUser);
         setPassword(savedPass);
         setRemember(true);
-        performLogin(savedUser, savedPass, true);
+        if (!skipAutoLogin) performLogin(savedUser, savedPass, true);
       }
     } catch (e) {
     } finally {
@@ -64,14 +67,14 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
 
     try {
-      if (shouldRemember) {
-        await SecureStore.setItemAsync('username', user);
-        await SecureStore.setItemAsync('password', pass);
-        await SecureStore.setItemAsync('remember', 'true');
-      } else {
-        await SecureStore.deleteItemAsync('username');
-        await SecureStore.deleteItemAsync('password');
-        await SecureStore.setItemAsync('remember', 'false');
+      // Never persist unverified credentials. A rejected password used to be
+      // saved before the server answered and replayed on every cold launch.
+      if (!shouldRemember) {
+        await Promise.all([
+          SecureStore.deleteItemAsync(STORAGE_KEYS.username).catch(() => {}),
+          SecureStore.deleteItemAsync(STORAGE_KEYS.password).catch(() => {}),
+          SecureStore.setItemAsync(STORAGE_KEYS.remember, 'false').catch(() => {}),
+        ]);
       }
 
       navigation.replace('LoginProcess', {

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -107,6 +107,12 @@
       background: var(--done);
       box-shadow: 0 0 8px var(--done);
       animation: pulse 2s ease infinite;
+    }
+
+    .pulse-dot.syncing {
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+      animation: pulse 1.2s ease infinite;
     }
 
     .pulse-dot.offline {
@@ -652,9 +658,9 @@
       </div>
     </div>
     <div class="header-right">
+      <button id="btnReconnect" class="filter-btn" onclick="manualReconnect()">🔄 Reconnect</button>
       <button id="btnSound" class="btn-sound enabled" onclick="toggleSound()">🔊 Sound On</button>
       <button class="filter-btn active" data-filter="active" onclick="setFilter('active',this)">Active</button>
-      <button class="filter-btn" data-filter="all" onclick="setFilter('all',this)">All</button>
       <div class="clock" id="clock">00:00:00</div>
     </div>
   </header>
@@ -671,11 +677,11 @@
     </div>
     <div class="stat done">
       <div class="stat-num" id="statDone">0</div>
-      <div class="stat-info"><span class="stat-name">Done</span></div>
+      <div class="stat-info"><span class="stat-name">Done This Session</span></div>
     </div>
     <div class="stat total">
       <div class="stat-num" id="statTotal">0</div>
-      <div class="stat-info"><span class="stat-name">Total Today</span></div>
+      <div class="stat-info"><span class="stat-name">Active Orders</span></div>
     </div>
   </div>
 
@@ -788,112 +794,257 @@
       renderOrders();
     }
 
+    window.__RESTROMATE_KITCHEN_CONTROLLER__ = true;
+    const busyOrders = new Set();
+    let completedThisSession = 0;
+    let hasLoadedOrders = false;
+    let fetchInFlight = null;
+    let refreshTimer = null;
+    let pollTimer = null;
+    let pollFailures = 0;
+    let socket = null;
+    let pageActive = !document.hidden;
+
+    function escapeHtml(value) {
+      const div = document.createElement('div');
+      div.textContent = String(value == null ? '' : value);
+      return div.innerHTML;
+    }
+
+    function setConnectionState(state, label) {
+      const dot = document.getElementById('connDot');
+      const text = document.getElementById('connLabel');
+      dot.classList.toggle('offline', state === 'offline');
+      dot.classList.toggle('syncing', state === 'syncing');
+      text.textContent = label;
+    }
+
+    function setOrderBusy(id, busy) {
+      if (busy) busyOrders.add(id); else busyOrders.delete(id);
+      const card = document.getElementById('card-' + id);
+      if (!card) return;
+      card.querySelectorAll('button').forEach(function(btn) {
+        btn.disabled = busy;
+        btn.style.opacity = busy ? '0.55' : '';
+      });
+    }
+
     async function setStatus(id, status) {
-      if (status === 'cancelled') {
-        const card = document.getElementById('card-' + id);
-        if (card) { card.style.opacity = '0'; card.style.transform = 'scale(0.95)'; setTimeout(function() { card.remove(); }, 300); }
-      }
+      if (busyOrders.has(id)) return;
+      setOrderBusy(id, true);
       try {
-        await fetch('/update_order/' + id, {
+        const res = await fetch('/update_order/' + id, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
           body: JSON.stringify({ status: status })
         });
-      } catch (e) {}
-      fetchOrders();
+        const data = await res.json().catch(function() { return {}; });
+        if (!res.ok) throw new Error(data.error || ('Update failed (' + res.status + ')'));
+        if (status === 'done') completedThisSession += 1;
+        await fetchOrders(true);
+      } catch (e) {
+        showToast(e.message || 'Could not update the order. Check the connection.', true);
+      } finally {
+        setOrderBusy(id, false);
+      }
     }
 
     function renderOrders() {
       const grid = document.getElementById('ordersGrid');
       const title = document.getElementById('gridTitle');
-      let filtered = orders.filter(function(o) {
-        if (currentFilter === 'active') return o.status === 'pending' || o.status === 'preparing';
-        return true;
+      const filtered = orders.filter(function(o) {
+        return o.status === 'pending' || o.status === 'preparing';
       });
       if (filtered.length === 0) {
-        title.textContent = currentFilter === 'active' ? 'LIVE ORDERS' : 'ALL ORDERS';
-        grid.innerHTML = '<div class="empty-kds"><div class="e-icon">&#127857;</div><h3>Kitchen Clear</h3><p>' + (currentFilter === 'active' ? 'No active orders right now.' : 'No orders to display.') + '</p></div>';
+        title.textContent = 'LIVE ORDERS';
+        grid.innerHTML = '<div class="empty-kds"><div class="e-icon">&#127857;</div><h3>Kitchen Clear</h3><p>No active orders right now.</p></div>';
         return;
       }
-      title.textContent = (currentFilter === 'active' ? 'LIVE ORDERS' : 'ALL ORDERS') + ' — ' + filtered.length;
-      // Remove stale cards
+      title.textContent = 'LIVE ORDERS — ' + filtered.length;
       grid.querySelectorAll('.order-card').forEach(function(card) {
-        const id = parseInt(card.id.replace('card-', ''));
+        const id = parseInt(card.id.replace('card-', ''), 10);
         if (!filtered.find(function(o) { return o.id === id; })) {
           card.style.opacity = '0';
           setTimeout(function() { card.remove(); }, 300);
         }
       });
       filtered.forEach(function(o) {
-        const isNew = !knownIds.has ? false : false;
-        const items = o.items.map(function(it) {
-          return '<div class="order-item"><span class="item-name">' + it.name + '</span><span class="item-qty">x' + it.qty + '</span></div>';
+        const orderId = Number(o.id);
+        const status = o.status === 'preparing' ? 'preparing' : 'pending';
+        const items = (o.items || []).map(function(it) {
+          return '<div class="order-item"><span class="item-name">' + escapeHtml(it.name) + '</span><span class="item-qty">x' + escapeHtml(it.qty) + '</span></div>';
         }).join('');
-        const notes = o.notes ? '<div class="order-notes">&#128221; ' + o.notes + '</div>' : '';
-        const el_elapsed = elapsed(o.created_at);
+        const notes = o.notes ? '<div class="order-notes">&#128221; ' + escapeHtml(o.notes) + '</div>' : '';
+        const elElapsed = elapsed(o.created_at);
         const urgent = isUrgent(o.created_at);
-        const actions = o.status === 'pending'
-          ? '<button class="action-btn btn-preparing" onclick="setStatus(' + o.id + ','preparing')">Preparing</button><button class="action-btn btn-done" onclick="setStatus(' + o.id + ','done')">Done</button>'
-          : o.status === 'preparing'
-          ? '<button class="action-btn btn-done" onclick="setStatus(' + o.id + ','done')">Mark Done</button><button class="action-btn btn-undo" onclick="setStatus(' + o.id + ','pending')">Undo</button>'
-          : '<button class="action-btn btn-undo" onclick="setStatus(' + o.id + ','pending')">Re-open</button>';
-        const html = '<div class="card-top"><div class="table-badge"><span>Table</span>' + o.table + '</div><div class="card-meta"><span class="status-pill ' + o.status + '">' + o.status + '</span><span class="elapsed' + (urgent ? ' urgent' : '') + '">' + el_elapsed + '</span></div></div><div class="card-items">' + items + notes + '</div><div class="card-footer"><span class="order-total">Rs.' + parseFloat(o.total).toFixed(2) + '</span><div class="action-row">' + actions + '</div></div>';
-        let card = document.getElementById('card-' + o.id);
+        const actions = status === 'pending'
+          ? '<button class="action-btn btn-preparing" onclick="setStatus(' + orderId + ',\'preparing\')">Preparing</button><button class="action-btn btn-done" onclick="setStatus(' + orderId + ',\'done\')">Done</button>'
+          : '<button class="action-btn btn-done" onclick="setStatus(' + orderId + ',\'done\')">Mark Done</button><button class="action-btn btn-undo" onclick="setStatus(' + orderId + ',\'pending\')">Undo</button>';
+        const total = Number.isFinite(Number(o.total)) ? Number(o.total).toFixed(2) : '0.00';
+        const html = '<div class="card-top"><div class="table-badge"><span>Table</span>' + escapeHtml(o.table) + '</div><div class="card-meta"><span class="status-pill ' + status + '">' + status + '</span><span class="elapsed' + (urgent ? ' urgent' : '') + '">' + escapeHtml(elElapsed) + '</span></div></div><div class="card-items">' + items + notes + '</div><div class="card-footer"><span class="order-total">Rs.' + total + '</span><div class="action-row">' + actions + '</div></div>';
+        let card = document.getElementById('card-' + orderId);
         if (card) {
-          card.className = 'order-card status-' + o.status;
+          card.className = 'order-card status-' + status;
           card.innerHTML = html;
         } else {
           card = document.createElement('div');
-          card.id = 'card-' + o.id;
-          card.className = 'order-card status-' + o.status + ' new-flash';
+          card.id = 'card-' + orderId;
+          card.className = 'order-card status-' + status + ' new-flash';
           card.innerHTML = html;
           grid.appendChild(card);
         }
+        setOrderBusy(orderId, busyOrders.has(orderId));
       });
     }
 
-    async function fetchOrders() {
-      try {
-        const res = await fetch('/kitchen_orders/' + RESTAURANT);
-        const data = await res.json();
-        const newOrders = data.orders || [];
-        const newIds = new Set(newOrders.map(function(o) { return o.id; }));
-        newOrders.forEach(function(o) {
-          if (!knownIds.has(o.id) && (o.status === 'pending' || o.status === 'preparing')) {
-            ping();
-            showToast('New order — Table ' + o.table, false);
+    async function fetchOrders(force) {
+      if (!pageActive && !force) return false;
+      if (fetchInFlight) return fetchInFlight;
+
+      fetchInFlight = (async function() {
+        try {
+          const res = await fetch('/kitchen_orders/' + encodeURIComponent(RESTAURANT), {
+            cache: 'no-store',
+            headers: { 'Accept': 'application/json' }
+          });
+          const data = await res.json().catch(function() { return {}; });
+          if (!res.ok) throw new Error(data.error || ('Order sync failed (' + res.status + ')'));
+          const newOrders = Array.isArray(data.orders) ? data.orders : [];
+          if (hasLoadedOrders) {
+            newOrders.forEach(function(o) {
+              if (!knownIds.has(o.id) && (o.status === 'pending' || o.status === 'preparing')) {
+                ping();
+                showToast('New order — Table ' + o.table, false);
+              }
+            });
           }
-        });
-        orders = newOrders;
-        knownIds = newIds;
-        updateStats();
-        renderOrders();
-      } catch (e) {}
+          orders = newOrders;
+          knownIds = new Set(newOrders.map(function(o) { return o.id; }));
+          hasLoadedOrders = true;
+          pollFailures = 0;
+          updateStats();
+          renderOrders();
+          if (!socket || !socket.connected) setConnectionState('syncing', 'Synced · polling');
+          return true;
+        } catch (e) {
+          pollFailures += 1;
+          if (!socket || !socket.connected) setConnectionState('offline', 'Offline · retrying');
+          if (pollFailures === 1) showToast('Kitchen sync paused — retrying automatically.', true);
+          return false;
+        } finally {
+          fetchInFlight = null;
+        }
+      })();
+      return fetchInFlight;
     }
 
     function updateStats() {
       document.getElementById('statPending').textContent = orders.filter(function(o) { return o.status === 'pending'; }).length;
       document.getElementById('statPrep').textContent = orders.filter(function(o) { return o.status === 'preparing'; }).length;
-      document.getElementById('statDone').textContent = orders.filter(function(o) { return o.status === 'done'; }).length;
+      document.getElementById('statDone').textContent = completedThisSession;
       document.getElementById('statTotal').textContent = orders.length;
     }
 
-    const socket = io({ transports: ['websocket', 'polling'] });
-    socket.on('connect', function() {
-      socket.emit('join', { room: RESTAURANT });
-      document.getElementById('connDot').classList.remove('offline');
-      document.getElementById('connLabel').textContent = 'Live';
-    });
-    socket.on('disconnect', function() {
-      document.getElementById('connDot').classList.add('offline');
-      document.getElementById('connLabel').textContent = 'Reconnecting…';
-    });
-    socket.on('new_order', function() { fetchOrders(); });
-    socket.on('order_updated', function() { fetchOrders(); });
-    socket.on('table_settled', function() { fetchOrders(); });
+    function queueRefresh() {
+      if (!pageActive || refreshTimer) return;
+      refreshTimer = setTimeout(function() {
+        refreshTimer = null;
+        fetchOrders(false);
+      }, 250);
+    }
 
-    fetchOrders();
-    setInterval(fetchOrders, 8000);
+    function schedulePoll(delay) {
+      clearTimeout(pollTimer);
+      if (!pageActive) return;
+      pollTimer = setTimeout(async function poll() {
+        await fetchOrders(false);
+        const healthyDelay = socket && socket.connected ? 15000 : 8000;
+        const retryDelay = Math.min(30000, 3000 * Math.pow(2, Math.min(pollFailures, 3)));
+        schedulePoll(pollFailures ? retryDelay : healthyDelay);
+      }, delay == null ? 0 : delay);
+    }
+
+    function initSocket() {
+      if (socket || typeof window.io !== 'function') {
+        if (typeof window.io !== 'function') setConnectionState('syncing', 'Polling · live service unavailable');
+        return;
+      }
+      socket = window.io({
+        transports: ['websocket', 'polling'],
+        upgrade: true,
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 10000,
+        randomizationFactor: 0.5,
+        timeout: 20000
+      });
+
+      socket.on('connect', function() {
+        socket.emit('join', { username: RESTAURANT });
+        setConnectionState('live', 'Live');
+        queueRefresh();
+      });
+      socket.on('disconnect', function() {
+        if (pageActive) setConnectionState('syncing', 'Polling · reconnecting');
+      });
+      socket.on('connect_error', function() {
+        if (pageActive) setConnectionState('syncing', 'Polling · reconnecting');
+      });
+      socket.on('new_order', queueRefresh);
+      socket.on('order_updated', queueRefresh);
+      socket.on('table_settled', queueRefresh);
+
+      // Reconnection events belong to the Manager in Socket.IO v4.
+      socket.io.on('reconnect_attempt', function() {
+        if (pageActive) setConnectionState('syncing', 'Polling · reconnecting');
+      });
+      socket.io.on('reconnect', function() {
+        socket.emit('join', { username: RESTAURANT });
+        queueRefresh();
+      });
+    }
+
+    function resumeLive() {
+      if (pageActive) return;
+      pageActive = true;
+      initSocket();
+      if (socket && !socket.connected) socket.connect();
+      schedulePoll(0);
+    }
+
+    function pauseLive() {
+      pageActive = false;
+      clearTimeout(pollTimer);
+      clearTimeout(refreshTimer);
+      pollTimer = null;
+      refreshTimer = null;
+      if (socket && socket.connected) socket.disconnect();
+    }
+
+    function manualReconnect() {
+      setConnectionState('syncing', 'Connecting…');
+      pageActive = true;
+      initSocket();
+      if (socket && !socket.connected) socket.connect();
+      schedulePoll(0);
+    }
+
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) pauseLive(); else resumeLive();
+    });
+    window.addEventListener('restromate:pause', pauseLive);
+    window.addEventListener('restromate:resume', function() {
+      if (!pageActive) resumeLive(); else schedulePoll(0);
+    });
+    window.addEventListener('online', manualReconnect);
+    window.addEventListener('offline', function() {
+      setConnectionState('offline', 'Offline');
+    });
+
+    // Polling starts independently, so a blocked Socket.IO CDN cannot break KDS.
+    initSocket();
+    schedulePoll(0);
   </script>
 
 

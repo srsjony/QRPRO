@@ -1544,6 +1544,56 @@
         transition-duration: 0.01ms !important;
       }
     }
+
+    /* ═══════════════════════════════════════════
+       AR BADGE ON CARDS
+    ═══════════════════════════════════════════ */
+    .ar-badge { position:absolute; top:10px; right:10px; z-index:3; background:rgba(0,0,0,.62); backdrop-filter:blur(8px); border:1px solid rgba(200,135,58,.45); border-radius:8px; padding:4px 10px; display:flex; align-items:center; gap:5px; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ember-glow); cursor:pointer; transition:all .2s; }
+    .ar-badge:hover { background:var(--ember); color:var(--obsidian); transform:scale(1.08); }
+
+    /* ═══════════════════════════════════════════
+       ITEM DETAIL OVERLAY
+    ═══════════════════════════════════════════ */
+    .detail-overlay { position:fixed; inset:0; z-index:900; background:var(--obsidian); transform:translateX(100%); transition:transform .45s var(--ease-out-expo); display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; }
+    .detail-overlay.open { transform:translateX(0); }
+    .detail-nav { position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between; padding:12px 18px; background:rgba(11,10,9,.92); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid var(--divider); }
+    .detail-back { width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.06); border:1px solid var(--divider); color:var(--cream); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+    .detail-back:hover { background:rgba(200,135,58,.15); }
+    .detail-nav-title { font-family:var(--ff-display); font-size:14px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--ember-glow); }
+    .detail-img-section { position:relative; width:100%; aspect-ratio:4/3; max-height:55vh; background:linear-gradient(145deg,var(--coal),var(--obsidian)); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .detail-food-img { max-width:80%; max-height:80%; object-fit:contain; border-radius:16px; filter:drop-shadow(0 20px 60px rgba(0,0,0,.7)); animation:detailImgIn .55s var(--ease-out-expo) both; }
+    .detail-img-ph { font-size:80px; opacity:.25; }
+    @keyframes detailImgIn { from{opacity:0;transform:scale(.82) translateY(18px)} to{opacity:1;transform:scale(1) translateY(0)} }
+    .detail-arrow { position:absolute; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; background:rgba(0,0,0,.45); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.1); color:#fff; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; z-index:2; }
+    .detail-arrow:hover { background:var(--ember); color:var(--obsidian); transform:translateY(-50%) scale(1.1); }
+    .detail-arrow.left { left:14px; } .detail-arrow.right { right:14px; }
+    .detail-body { padding:28px 22px 110px; }
+    .detail-name { font-family:var(--ff-display); font-size:clamp(28px,7vw,44px); font-weight:700; color:var(--cream); line-height:1.1; text-align:center; margin-bottom:12px; animation:heroUp .5s var(--ease-out-expo) .08s both; }
+    .detail-price-row { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:24px; animation:heroUp .5s var(--ease-out-expo) .14s both; }
+    .detail-price { font-family:var(--ff-display); font-size:30px; font-weight:700; color:var(--ember-glow); }
+    .detail-cat-chip { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ember); background:rgba(200,135,58,.1); padding:5px 14px; border-radius:999px; border:1px solid rgba(200,135,58,.25); }
+    .detail-actions { display:flex; flex-direction:column; gap:12px; animation:heroUp .5s var(--ease-out-expo) .2s both; }
+    .detail-ar-btn { width:100%; padding:16px; border-radius:var(--radius-lg); border:2px solid var(--ember); background:linear-gradient(135deg,rgba(200,135,58,.14),rgba(200,135,58,.04)); color:var(--ember-glow); font-family:var(--ff-body); font-size:13px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:all .25s; }
+    .detail-ar-btn:hover { background:var(--ember); color:var(--obsidian); transform:translateY(-2px); box-shadow:0 8px 28px rgba(200,135,58,.4); }
+    .detail-add-btn { width:100%; padding:16px; border-radius:var(--radius-lg); border:none; background:linear-gradient(135deg,var(--ember),var(--ember-dim)); color:var(--obsidian); font-family:var(--ff-body); font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:all .25s var(--ease-spring); box-shadow:0 6px 24px rgba(200,135,58,.35); }
+    .detail-add-btn:hover { transform:translateY(-3px); box-shadow:0 12px 36px rgba(200,135,58,.5); }
+    .detail-add-btn:active { transform:scale(.97); }
+
+    /* ═══════════════════════════════════════════
+       AR CAMERA VIEW
+    ═══════════════════════════════════════════ */
+    .ar-overlay { position:fixed; inset:0; z-index:950; background:#000; display:none; flex-direction:column; }
+    .ar-overlay.open { display:flex; }
+    .ar-header { position:absolute; top:0; left:0; right:0; z-index:10; display:flex; align-items:center; justify-content:space-between; padding:16px 18px; background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent); }
+    .ar-close-btn { width:42px; height:42px; border-radius:50%; background:rgba(0,0,0,.55); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.15); color:#fff; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+    .ar-close-btn:hover { background:rgba(239,68,68,.6); }
+    .ar-label-chip { font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.85); background:rgba(0,0,0,.5); backdrop-filter:blur(10px); padding:8px 18px; border-radius:999px; border:1px solid rgba(200,135,58,.4); }
+    .ar-camera-feed { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .ar-food-img { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:55%; max-width:320px; object-fit:contain; filter:drop-shadow(0 12px 40px rgba(0,0,0,.55)); user-select:none; -webkit-user-select:none; touch-action:none; animation:arFoodIn .65s var(--ease-out-expo) .3s both; pointer-events:auto; }
+    @keyframes arFoodIn { from{opacity:0;transform:translate(-50%,-50%) scale(.45) rotateX(25deg)} to{opacity:1;transform:translate(-50%,-50%) scale(1) rotateX(0)} }
+    .ar-hint-text { position:absolute; bottom:44px; left:50%; transform:translateX(-50%); font-size:13px; font-weight:500; color:rgba(255,255,255,.65); background:rgba(0,0,0,.5); backdrop-filter:blur(8px); padding:10px 22px; border-radius:999px; white-space:nowrap; z-index:10; animation:arHintPulse 2.5s ease-in-out infinite; }
+    @keyframes arHintPulse { 0%,100%{opacity:.55} 50%{opacity:1} }
+    @keyframes arFloat { 0%,100%{transform:translateY(0) rotateY(0)} 25%{transform:translateY(-12px) rotateY(5deg)} 75%{transform:translateY(8px) rotateY(-5deg)} }
   </style>
 </head>
 
@@ -1611,7 +1661,10 @@
     <div class="menu-card" data-id="{{ menu_item.id }}" data-cat="{{ menu_item.category }}" data-name="{{ menu_item.item | lower }}" data-stock="{{ menu_item.stock }}" data-available="{{ menu_item.available }}"
       style="animation-delay:{{ loop.index0 * 0.045 }}s">
 
-      <div class="card-img-wrap shimmer">
+      <div class="card-img-wrap shimmer" onclick="openItemDetail({{ menu_item.id }})" style="cursor:pointer">
+        {% if menu_item.image %}
+        <span class="ar-badge" onclick="event.stopPropagation(); openARDirect({{ menu_item.id }})">📸 AR</span>
+        {% endif %}
         {% if menu_item.image %}
         <img class="card-img" src="{{ url_for('static', filename='uploads/' + menu_item.image) }}" alt="{{menu_item.item}}" loading="lazy"
           onload="this.parentElement.classList.remove('shimmer')"
@@ -1709,6 +1762,48 @@
         {% endfor %}
       </div>
     </div>
+  </div>
+
+  <!-- ITEM DETAIL OVERLAY -->
+  <div class="detail-overlay" id="detailOverlay">
+    <div class="detail-nav">
+      <button class="detail-back" onclick="closeItemDetail()">←</button>
+      <span class="detail-nav-title">{{username}}</span>
+      <button class="detail-back" onclick="closeItemDetail();openCart()" style="font-size:16px">🛒</button>
+    </div>
+    <div class="detail-img-section" id="detailImgSection">
+      <button class="detail-arrow left" onclick="navigateDetail(-1)">‹</button>
+      <div id="detailImgContainer"></div>
+      <button class="detail-arrow right" onclick="navigateDetail(1)">›</button>
+    </div>
+    <div class="detail-body">
+      <div class="detail-name" id="detailName"></div>
+      <div class="detail-price-row">
+        <span class="detail-price" id="detailPrice"></span>
+        <span class="detail-cat-chip" id="detailCategory"></span>
+      </div>
+      <div class="detail-actions">
+        <button class="detail-ar-btn" id="detailARBtn" onclick="openARView()">
+          <span style="font-size:20px">📸</span> View in AR
+        </button>
+        <button class="detail-add-btn" id="detailAddBtn" onclick="detailAddToCart()">
+          <span>🛒</span> Add to Order
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AR CAMERA OVERLAY -->
+  <div class="ar-overlay" id="arOverlay">
+    <div class="ar-header">
+      <button class="ar-close-btn" onclick="closeARView()">✕</button>
+      <span class="ar-label-chip">📸 AR View</span>
+      <div style="width:42px"></div>
+    </div>
+    <video class="ar-camera-feed" id="arCameraFeed" autoplay playsinline muted style="display:none"></video>
+    <div id="arFallback" style="display:none;position:absolute;inset:0;background:linear-gradient(145deg,#0a0a12,#111118,#0d0d14);display:none;flex-direction:column;align-items:center;justify-content:center"></div>
+    <img class="ar-food-img" id="arFoodImg" src="" alt="AR food" style="display:none">
+    <div class="ar-hint-text" id="arHint">Point camera at table • Drag to move</div>
   </div>
 
   <!-- TOAST CONTAINER -->
@@ -2136,6 +2231,166 @@
       renderCart();
       updateCardButtons();
     }
+
+    // ── ITEM DETAIL & AR VIEW ────────────────────────
+    const MENU_ITEMS = {{ data | tojson | safe }};
+    let currentDetailId = null;
+    let arStream = null;
+
+    function getVisibleItemIds() {
+      return Array.from(document.querySelectorAll('.menu-card'))
+        .filter(c => c.style.display !== 'none')
+        .map(c => parseInt(c.dataset.id, 10));
+    }
+    function findMenuItem(id) { return MENU_ITEMS.find(m => m.id === id); }
+
+    function openItemDetail(itemId) {
+      const item = findMenuItem(itemId);
+      if (!item) return;
+      currentDetailId = itemId;
+      document.getElementById('detailName').textContent = item.item;
+      document.getElementById('detailPrice').textContent = '\u20b9' + item.price;
+      document.getElementById('detailCategory').textContent = item.category;
+      const ic = document.getElementById('detailImgContainer');
+      if (item.image) {
+        ic.innerHTML = `<img class="detail-food-img" src="/static/uploads/${item.image}" alt="${item.item}">`;
+        document.getElementById('detailARBtn').style.display = 'flex';
+      } else {
+        ic.innerHTML = '<div class="detail-img-ph">\ud83c\udf7d</div>';
+        document.getElementById('detailARBtn').style.display = 'none';
+      }
+      updateDetailAddBtn();
+      document.getElementById('detailOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeItemDetail() {
+      document.getElementById('detailOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function navigateDetail(dir) {
+      const ids = getVisibleItemIds();
+      if (!ids.length) return;
+      let idx = ids.indexOf(currentDetailId);
+      idx = (idx + dir + ids.length) % ids.length;
+      openItemDetail(ids[idx]);
+    }
+
+    function updateDetailAddBtn() {
+      const inCart = cart.find(c => c.id === currentDetailId);
+      const btn = document.getElementById('detailAddBtn');
+      if (inCart && inCart.qty > 0) {
+        btn.innerHTML = `<span>\u2713</span> In Cart (${inCart.qty})`;
+        btn.style.background = 'linear-gradient(135deg, #22c55e, #15803d)';
+      } else {
+        btn.innerHTML = '<span>\ud83d\uded2</span> Add to Order';
+        btn.style.background = 'linear-gradient(135deg, var(--ember), var(--ember-dim))';
+      }
+    }
+
+    function detailAddToCart() {
+      const item = findMenuItem(currentDetailId);
+      if (!item) return;
+      if (item.available === 0 || item.stock === 0) { alert('This item is currently out of stock.'); return; }
+      const found = cart.find(i => i.id === currentDetailId);
+      if (found) {
+        if (item.stock !== -1 && found.qty >= item.stock) { alert(`Max ${item.stock} allowed.`); return; }
+        found.qty++;
+      } else {
+        cart.push({ id: currentDetailId, name: item.item, price: Number(item.price), qty: 1 });
+      }
+      if (navigator.vibrate) navigator.vibrate(40);
+      const fab = document.getElementById('cartFab');
+      fab.classList.remove('bounce'); void fab.offsetWidth; fab.classList.add('bounce');
+      showToast(item.item);
+      saveCart(); renderCart(); updateCardButtons(); updateDetailAddBtn();
+    }
+
+    function openARView() {
+      const item = findMenuItem(currentDetailId);
+      if (!item || !item.image) return;
+      const overlay = document.getElementById('arOverlay');
+      const foodImg = document.getElementById('arFoodImg');
+      const video = document.getElementById('arCameraFeed');
+      const fallback = document.getElementById('arFallback');
+      const hint = document.getElementById('arHint');
+      foodImg.src = '/static/uploads/' + item.image;
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      foodImg.style.top = '50%'; foodImg.style.left = '50%';
+      foodImg.style.transform = 'translate(-50%,-50%)'; foodImg.style.width = '55%';
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        }).then(stream => {
+          arStream = stream; video.srcObject = stream;
+          video.style.display = 'block'; fallback.style.display = 'none';
+          foodImg.style.display = 'block';
+          hint.textContent = 'Point camera at table \u2022 Drag to move';
+          initARDrag(foodImg);
+        }).catch(() => { showARFallback(item); });
+      } else { showARFallback(item); }
+    }
+
+    function showARFallback(item) {
+      document.getElementById('arCameraFeed').style.display = 'none';
+      document.getElementById('arFoodImg').style.display = 'none';
+      const fb = document.getElementById('arFallback');
+      fb.style.cssText = 'display:flex;position:absolute;inset:0;background:linear-gradient(145deg,#0a0a12,#111118);flex-direction:column;align-items:center;justify-content:center';
+      fb.innerHTML = `<img src="/static/uploads/${item.image}" alt="${item.item}" style="width:65%;max-width:380px;object-fit:contain;filter:drop-shadow(0 12px 40px rgba(0,0,0,.55));animation:arFloat 4s ease-in-out infinite"><div style="margin-top:28px;font-size:14px;font-weight:500;color:rgba(255,255,255,.45);text-align:center">Camera not available<br>Showing interactive preview</div>`;
+      document.getElementById('arHint').textContent = 'Open on phone for AR camera experience';
+    }
+
+    function closeARView() {
+      document.getElementById('arOverlay').classList.remove('open');
+      if (arStream) { arStream.getTracks().forEach(t => t.stop()); arStream = null; }
+      document.getElementById('arCameraFeed').srcObject = null;
+      document.getElementById('arCameraFeed').style.display = 'none';
+      document.getElementById('arFallback').style.display = 'none';
+      document.getElementById('arFoodImg').style.display = 'none';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function openARDirect(itemId) { currentDetailId = itemId; openARView(); }
+
+    function initARDrag(el) {
+      let isDrag = false, sx = 0, sy = 0, ex = 0, ey = 0, pd = 0, sw = 0;
+      el.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 1) {
+          isDrag = true; const r = el.getBoundingClientRect();
+          sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+          ex = r.left + r.width/2; ey = r.top + r.height/2;
+        } else if (e.touches.length === 2) {
+          pd = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+          sw = el.offsetWidth;
+        }
+        e.preventDefault();
+      }, {passive:false});
+      el.addEventListener('touchmove', function(e) {
+        if (e.touches.length===1 && isDrag) {
+          el.style.left=(ex+e.touches[0].clientX-sx)+'px';
+          el.style.top=(ey+e.touches[0].clientY-sy)+'px';
+          el.style.transform='translate(-50%,-50%)';
+        } else if (e.touches.length===2) {
+          const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+          el.style.width=Math.max(80,Math.min(sw*d/pd,window.innerWidth*.9))+'px';
+          el.style.maxWidth='none';
+        }
+        e.preventDefault();
+      }, {passive:false});
+      el.addEventListener('touchend', ()=>{isDrag=false});
+      let md=false;
+      el.addEventListener('mousedown', e=>{md=true;el.style.cursor='grabbing';const r=el.getBoundingClientRect();sx=e.clientX;sy=e.clientY;ex=r.left+r.width/2;ey=r.top+r.height/2});
+      window.addEventListener('mousemove', e=>{if(!md)return;el.style.left=(ex+e.clientX-sx)+'px';el.style.top=(ey+e.clientY-sy)+'px';el.style.transform='translate(-50%,-50%)'});
+      window.addEventListener('mouseup', ()=>{md=false;el.style.cursor='grab'});
+    }
+
+    (function(){
+      const det=document.getElementById('detailOverlay'); let sx=0;
+      det.addEventListener('touchstart',e=>{sx=e.touches[0].clientX},{passive:true});
+      det.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>60)navigateDetail(dx<0?1:-1)},{passive:true});
+    })();
 
     // ── INIT CARD BUTTONS ON LOAD ───────────────────
     updateCardButtons();

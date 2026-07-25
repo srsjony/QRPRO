@@ -5,6 +5,15 @@ from flask import abort, request, session
 
 CSRF_SESSION_KEY = "_csrf_token"
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
+CSRF_EXEMPT_ROUTES = {
+    '/api/print_bill',
+    '/api/send_whatsapp',
+    '/api/table_bill',
+    '/api/table_status',
+    '/api/settle',
+    '/kitchen_orders',
+    '/update_order',
+}
 
 
 def get_csrf_token():
@@ -26,10 +35,20 @@ def validate_csrf_token():
         abort(400, description="Invalid CSRF token")
 
 
+def is_csrf_exempt():
+    path = request.path
+    for exempt in CSRF_EXEMPT_ROUTES:
+        if path.startswith(exempt) or path == exempt:
+            return True
+    return False
+
+
 def init_csrf_protection(app):
     @app.before_request
     def csrf_protect():
         if request.method in SAFE_METHODS:
+            return
+        if is_csrf_exempt():
             return
         validate_csrf_token()
 

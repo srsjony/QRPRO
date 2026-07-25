@@ -2,6 +2,14 @@ import { Platform } from 'react-native';
 
 export const BASE_URL = 'https://qrpro-1.onrender.com';
 
+// Keys used with expo-secure-store. Kept here so screens and services agree.
+export const STORAGE_KEYS = {
+  username: 'username',
+  password: 'password',
+  remember: 'remember',
+  printer: 'saved_printer',
+};
+
 export const FONTS = {
   numeric: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
 };

@@ -9,25 +9,33 @@ import {
   Platform,
   Alert,
   Animated,
+  Linking,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, BASE_URL } from '../constants/config';
+import usePrinter from '../hooks/usePrinter';
+import * as Printer from '../services/printer';
+
+/** Safely embed a JS string literal into injected script. */
+const jsString = (value) => JSON.stringify(String(value ?? ''));
 
 export default function WebViewScreen({ route, navigation }) {
   const { title, path, color = COLORS.ember, loginData } = route.params;
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(null); // null | { title, message }
   const [canGoBack, setCanGoBack] = useState(false);
   const webViewRef = useRef(null);
   const loadAnim = useRef(new Animated.Value(0)).current;
+  const pendingJob = useRef(null); // last print payload that failed for lack of a printer
+  const printer = usePrinter();
 
   const url = loginData ? `${BASE_URL}/` : `${BASE_URL}${path}`;
 
-  // ✅ Fixed BackHandler API — using .remove() (React Native 0.65+)
+  /* ── Hardware back → WebView history ─────────────────────── */
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== 'android') return;
@@ -44,7 +52,12 @@ export default function WebViewScreen({ route, navigation }) {
     }, [canGoBack])
   );
 
-  // Animate progress bar while loading
+  /* ── Reconnect the saved printer in the background ────────── */
+  useEffect(() => {
+    Printer.restore();
+  }, []);
+
+  /* ── Loading progress bar ────────────────────────────────── */
   useEffect(() => {
     if (loading) {
       loadAnim.setValue(0);
@@ -56,28 +69,27 @@ export default function WebViewScreen({ route, navigation }) {
     }
   }, [loading]);
 
-  // JS to auto-fill login form and submit
+  /* ── Injected page script ────────────────────────────────── */
+  // Credentials are embedded as JSON string literals so quotes in a password
+  // cannot break out of the script.
   const loginScript = loginData
     ? `
     (function() {
       try {
-        const form = document.querySelector('form');
-        if (form) {
-          const usernameInput = form.querySelector('input[name="username"]');
-          const passwordInput = form.querySelector('input[name="password"]');
-          if (usernameInput && passwordInput) {
-            usernameInput.value = "${loginData.username}";
-            passwordInput.value = "${loginData.password}";
-            form.submit();
-          }
+        var form = document.querySelector('form');
+        if (!form) return;
+        var u = form.querySelector('input[name="username"]');
+        var p = form.querySelector('input[name="password"]');
+        if (u && p) {
+          u.value = ${jsString(loginData.username)};
+          p.value = ${jsString(loginData.password)};
+          form.submit();
         }
       } catch(e) {}
     })();
-    true;
   `
     : '';
 
-  // Inject CSS to hide nav + apply tabular-nums to numbers
   const injectedJS = `
     (function() {
       try {
@@ -92,25 +104,149 @@ export default function WebViewScreen({ route, navigation }) {
         var meta = document.querySelector('meta[name="viewport"]');
         if (meta) meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
 
+        // Let the page know a real thermal printer is reachable through the app.
+        window.__CAPTAIN_APP__ = true;
+        window.__CAPTAIN_PRINTER_READY__ = ${printer.connected ? 'true' : 'false'};
+
         ${loginScript}
       } catch(e) {}
     })();
     true;
   `;
 
+  /* ── Feedback back into the page ─────────────────────────── */
+  const toastInPage = (msg, isError = false) => {
+    webViewRef.current?.injectJavaScript(`
+      (function(){
+        try {
+          if (typeof showToast === 'function') showToast(${jsString(msg)}, ${isError ? 'true' : 'false'});
+        } catch(e) {}
+      })(); true;
+    `);
+  };
+
+  /* ── Printing ────────────────────────────────────────────── */
+  const sendToPrinter = async (data, label) => {
+    if (!Printer.isPrinterSupported()) {
+      Alert.alert(
+        'Printing unavailable',
+        'Bluetooth printing needs the installed app build. Expo Go cannot reach the printer.'
+      );
+      return;
+    }
+
+    // One quiet attempt to bring back the saved printer before nagging the user.
+    if (!Printer.getState().connected) await Printer.restore();
+
+    if (!Printer.getState().connected) {
+      pendingJob.current = { data, label };
+      Alert.alert('No printer connected', `Connect a Bluetooth printer to print ${label}.`, [
+        { text: 'Cancel', style: 'cancel', onPress: () => { pendingJob.current = null; } },
+        {
+          text: 'Connect printer',
+          onPress: () => navigation.navigate('Printer', { pendingJobLabel: label }),
+        },
+      ]);
+      return;
+    }
+
+    try {
+      if (data.raw_bytes_base64) {
+        await Printer.printBase64(data.raw_bytes_base64);
+      } else if (data.bill_text) {
+        await Printer.printText(data.bill_text);
+      } else {
+        throw new Error('The page sent no receipt data.');
+      }
+      toastInPage(`${label} printed`);
+    } catch (e) {
+      Alert.alert('Print failed', e?.message || 'Could not reach the printer.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Retry', onPress: () => sendToPrinter(data, label) },
+        {
+          text: 'Printer setup',
+          onPress: () => navigation.navigate('Printer', { pendingJobLabel: label }),
+        },
+      ]);
+      toastInPage('Print failed', true);
+    }
+  };
+
+  /* ── Offer to finish a print job after connecting ─────────── */
+  useFocusEffect(
+    useCallback(() => {
+      const job = pendingJob.current;
+      if (!job || !Printer.getState().connected) return;
+      pendingJob.current = null;
+
+      Alert.alert('Printer ready', `Print ${job.label} now?`, [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Print', onPress: () => sendToPrinter(job.data, job.label) },
+      ]);
+    }, [])
+  );
+
+  const handleMessage = async (event) => {
+    let data;
+    try {
+      data = JSON.parse(event.nativeEvent.data);
+    } catch (e) {
+      return; // Not a message meant for us.
+    }
+
+    switch (data.type) {
+      case 'PRINT_BILL':
+      case 'PRINT_RECEIPT':
+        await sendToPrinter(data, `bill for Table ${data.table ?? '—'}`);
+        break;
+
+      case 'PRINT_KOT':
+        await sendToPrinter(data, `KOT for Table ${data.table ?? '—'}`);
+        break;
+
+      case 'CONNECT_BLUETOOTH':
+      case 'CONNECT_SERIAL':
+        navigation.navigate('Printer');
+        break;
+
+      case 'OPEN_URL':
+        if (data.url) Linking.openURL(data.url).catch(() => {});
+        break;
+
+      case 'NATIVE_ALERT':
+      case 'NATIVE_CONFIRM':
+        Alert.alert('RestroMate', String(data.message || data.text || ''));
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  /* ── Navigation handling ─────────────────────────────────── */
   const handleNavigationStateChange = (navState) => {
     setCanGoBack(navState.canGoBack);
 
-    // After login, if we land on /dashboard, redirect to target
-    if (
-      loginData &&
-      navState.url.includes('/dashboard') &&
-      loginData.targetPath !== '/dashboard'
-    ) {
+    // After an auto-login we land on /dashboard; bounce to the requested page.
+    if (loginData && navState.url.includes('/dashboard') && loginData.targetPath !== '/dashboard') {
       webViewRef.current?.injectJavaScript(
-        `window.location.href = "${loginData.targetPath}"; true;`
+        `window.location.href = ${jsString(loginData.targetPath)}; true;`
       );
     }
+  };
+
+  // Keep WhatsApp / tel / mail and any off-site link out of the WebView.
+  const handleShouldStartLoad = (request) => {
+    const target = request.url || '';
+    if (/^(tel:|mailto:|whatsapp:|intent:|sms:)/i.test(target)) {
+      Linking.openURL(target).catch(() => {});
+      return false;
+    }
+    if (/^https?:/i.test(target) && !target.startsWith(BASE_URL)) {
+      Linking.openURL(target).catch(() => {});
+      return false;
+    }
+    return true;
   };
 
   const handleLoadEnd = () => {
@@ -123,36 +259,22 @@ export default function WebViewScreen({ route, navigation }) {
     webViewRef.current?.reload();
   };
 
-  const handleMessage = async (event) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'PRINT_RECEIPT') {
-        // Bluetooth printing handled here if printer is connected
-        Alert.alert('Print', 'Bluetooth print received — ensure printer is connected via Setup.');
-      }
-    } catch (e) {
-      console.warn('Message parsing error:', e);
-    }
+  const retry = () => {
+    setError(null);
+    setLoading(true);
+    webViewRef.current?.reload();
   };
 
+  /* ── Error screen ────────────────────────────────────────── */
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar style="light" />
         <View style={styles.errorWrap}>
           <Text style={styles.errorIcon}>📡</Text>
-          <Text style={styles.errorTitle}>Connection Failed</Text>
-          <Text style={styles.errorText}>
-            Unable to reach the server. Check your internet connection and try again.
-          </Text>
-          <TouchableOpacity
-            style={[styles.retryBtn, { backgroundColor: color }]}
-            onPress={() => {
-              setError(false);
-              setLoading(true);
-              webViewRef.current?.reload();
-            }}
-          >
+          <Text style={styles.errorTitle}>{error.title}</Text>
+          <Text style={styles.errorText}>{error.message}</Text>
+          <TouchableOpacity style={[styles.retryBtn, { backgroundColor: color }]} onPress={retry}>
             <Text style={styles.retryText}>↻  Retry</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.backBtnError} onPress={() => navigation.goBack()}>
@@ -169,7 +291,12 @@ export default function WebViewScreen({ route, navigation }) {
 
       {/* ── Header ─────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
           <Text style={styles.headerBack}>‹</Text>
         </TouchableOpacity>
 
@@ -179,11 +306,30 @@ export default function WebViewScreen({ route, navigation }) {
         </View>
 
         <TouchableOpacity
+          onPress={() => navigation.navigate('Printer')}
+          style={styles.headerBtn}
+          accessibilityRole="button"
+          accessibilityLabel={printer.connected ? 'Printer connected' : 'Printer not connected'}
+        >
+          <Text style={styles.headerPrinter}>🖨️</Text>
+          <View
+            style={[
+              styles.printerBadge,
+              { backgroundColor: printer.connected ? COLORS.success : COLORS.danger },
+            ]}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={handleRefresh}
           style={styles.headerBtn}
           disabled={refreshing || loading}
+          accessibilityRole="button"
+          accessibilityLabel="Reload page"
         >
-          <Text style={[styles.headerRefresh, { color: refreshing ? color : COLORS.creamMuted }]}>
+          <Text
+            style={[styles.headerRefresh, { color: refreshing ? color : COLORS.creamMuted }]}
+          >
             ↻
           </Text>
         </TouchableOpacity>
@@ -197,12 +343,14 @@ export default function WebViewScreen({ route, navigation }) {
               styles.progressBar,
               { backgroundColor: color },
               {
-                transform: [{
-                  translateX: loadAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-300, 400],
-                  }),
-                }],
+                transform: [
+                  {
+                    translateX: loadAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-300, 400],
+                    }),
+                  },
+                ],
               },
             ]}
           />
@@ -216,12 +364,35 @@ export default function WebViewScreen({ route, navigation }) {
         style={styles.webview}
         onLoadStart={() => setLoading(true)}
         onLoadEnd={handleLoadEnd}
-        onError={() => { setLoading(false); setError(true); }}
-        onHttpError={(syntheticEvent) => {
-          const { nativeEvent } = syntheticEvent;
-          if (nativeEvent.statusCode >= 500) { setLoading(false); setError(true); }
+        onError={() => {
+          setLoading(false);
+          setError({
+            title: 'Connection failed',
+            message: 'Unable to reach the server. Check your internet connection and try again.',
+          });
+        }}
+        onHttpError={({ nativeEvent }) => {
+          // Only the main document matters; sub-resource 404s are noise.
+          if (nativeEvent.url !== url) return;
+          const code = nativeEvent.statusCode;
+          if (code === 404) {
+            setError({
+              title: 'Page not found',
+              message:
+                'That restaurant username does not exist on the server. Go back and check the spelling.',
+            });
+          } else if (code >= 500) {
+            setError({
+              title: 'Server error',
+              message: `The server responded with ${code}. Try again in a moment.`,
+            });
+          } else {
+            return;
+          }
+          setLoading(false);
         }}
         onNavigationStateChange={handleNavigationStateChange}
+        onShouldStartLoadWithRequest={handleShouldStartLoad}
         onMessage={handleMessage}
         injectedJavaScript={injectedJS}
         javaScriptEnabled={true}
@@ -277,6 +448,19 @@ const styles = StyleSheet.create({
   headerRefresh: {
     fontSize: 18,
     fontWeight: '600',
+  },
+  headerPrinter: {
+    fontSize: 16,
+  },
+  printerBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.surface,
   },
   headerMid: {
     flexDirection: 'row',

@@ -1,5 +1,12 @@
 export const BASE_URL = 'https://qrpro-1.onrender.com';
 
+// Keys used with expo-secure-store. Kept here so screens and services agree.
+export const STORAGE_KEYS = {
+  username: 'restaurant_username',
+  printer: 'saved_printer',
+  autoResume: 'auto_resume_enabled',
+};
+
 export const COLORS = {
   bg: '#080807',
   surface: '#0f0e0c',

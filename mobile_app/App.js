@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import LoginScreen from './screens/LoginScreen';
 import WebViewScreen from './screens/WebViewScreen';
+import PrinterScreen from './screens/PrinterScreen';
 import NativeTabNavigator from './navigation/NativeTabNavigator';
 
 const Stack = createNativeStackNavigator();
@@ -26,6 +27,11 @@ export default function App() {
           {/* This screen handles the initial login before switching to tabs */}
           <Stack.Screen name="LoginProcess" component={WebViewScreen} />
           <Stack.Screen name="MainTabs" component={NativeTabNavigator} />
+          <Stack.Screen
+            name="Printer"
+            component={PrinterScreen}
+            options={{ animation: 'slide_from_bottom' }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
