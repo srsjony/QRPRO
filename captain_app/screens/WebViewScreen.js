@@ -10,6 +10,7 @@ import {
   Alert,
   Animated,
   Linking,
+  AppState,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +23,18 @@ import * as Printer from '../services/printer';
 /** Safely embed a JS string literal into injected script. */
 const jsString = (value) => JSON.stringify(String(value ?? ''));
 
+const APP_ORIGIN = new URL(BASE_URL).origin;
+
+/** Returns the parsed URL only when it really belongs to our server. */
+const parseAppUrl = (value) => {
+  try {
+    const parsed = new URL(value);
+    return parsed.origin === APP_ORIGIN ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+};
+
 export default function WebViewScreen({ route, navigation }) {
   const { title, path, color = COLORS.ember, loginData } = route.params;
   const [loading, setLoading] = useState(true);
@@ -31,6 +44,8 @@ export default function WebViewScreen({ route, navigation }) {
   const webViewRef = useRef(null);
   const loadAnim = useRef(new Animated.Value(0)).current;
   const pendingJob = useRef(null); // last print payload that failed for lack of a printer
+  const currentMainUrl = useRef(null);
+  const appState = useRef(AppState.currentState);
   const printer = usePrinter();
 
   const url = loginData ? `${BASE_URL}/` : `${BASE_URL}${path}`;
@@ -52,9 +67,18 @@ export default function WebViewScreen({ route, navigation }) {
     }, [canGoBack])
   );
 
-  /* ── Reconnect the saved printer in the background ────────── */
+  /* ── Reconnect the saved printer, including after backgrounding ──── */
+  // Android tears down Bluetooth sockets while the app sits in the background,
+  // so a single restore() on mount left the first print after a break failing.
   useEffect(() => {
     Printer.restore();
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      const cameToForeground = appState.current !== 'active' && nextState === 'active';
+      appState.current = nextState;
+      if (cameToForeground && !Printer.getState().connected) Printer.restore();
+    });
+    return () => subscription.remove();
   }, []);
 
   /* ── Loading progress bar ────────────────────────────────── */
@@ -227,6 +251,10 @@ export default function WebViewScreen({ route, navigation }) {
   const handleNavigationStateChange = (navState) => {
     setCanGoBack(navState.canGoBack);
 
+    // Track the live main-frame URL so HTTP errors can be matched after redirects.
+    const parsed = parseAppUrl(navState.url || '');
+    if (parsed) currentMainUrl.current = parsed.href;
+
     // After an auto-login we land on /dashboard; bounce to the requested page.
     if (loginData && navState.url.includes('/dashboard') && loginData.targetPath !== '/dashboard') {
       webViewRef.current?.injectJavaScript(
@@ -242,7 +270,9 @@ export default function WebViewScreen({ route, navigation }) {
       Linking.openURL(target).catch(() => {});
       return false;
     }
-    if (/^https?:/i.test(target) && !target.startsWith(BASE_URL)) {
+    // Compare parsed origins, not string prefixes: "https://qrpro-1.onrender.com.evil.tld"
+    // passes a startsWith() check but is a different site entirely.
+    if (/^https?:/i.test(target) && !parseAppUrl(target)) {
       Linking.openURL(target).catch(() => {});
       return false;
     }
@@ -372,8 +402,12 @@ export default function WebViewScreen({ route, navigation }) {
           });
         }}
         onHttpError={({ nativeEvent }) => {
-          // Only the main document matters; sub-resource 404s are noise.
-          if (nativeEvent.url !== url) return;
+          // Only the main document matters; sub-resource 404s are noise. Compare
+          // against the current main-frame URL so post-redirect errors still count.
+          const failed = parseAppUrl(nativeEvent.url);
+          const main = parseAppUrl(currentMainUrl.current || url);
+          if (!failed || (main && failed.pathname !== main.pathname)) return;
+
           const code = nativeEvent.statusCode;
           if (code === 404) {
             setError({

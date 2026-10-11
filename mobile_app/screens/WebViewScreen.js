@@ -117,7 +117,10 @@ export default function WebViewScreen({ navigation, route }) {
       const wasActive = appState.current === 'active';
       appState.current = nextState;
       const isActive = nextState === 'active';
-      if (wasActive !== isActive) signalPageLifecycle(isActive && navigation.isFocused());
+      if (wasActive !== isActive) {
+        signalPageLifecycle(isActive && navigation.isFocused());
+        if (isActive && !Printer.getState().connected) Printer.restore();
+      }
     });
     return () => subscription.remove();
   }, [navigation, signalPageLifecycle]);
@@ -151,6 +154,7 @@ export default function WebViewScreen({ navigation, route }) {
   }, [loading]);
 
   // Bring back the saved Bluetooth printer so the first bill prints without setup.
+  // Android drops Bluetooth sockets while backgrounded, so also retry on resume.
   useEffect(() => {
     Printer.restore();
   }, []);

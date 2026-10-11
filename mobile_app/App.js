@@ -8,32 +8,35 @@ import LoginScreen from './screens/LoginScreen';
 import WebViewScreen from './screens/WebViewScreen';
 import PrinterScreen from './screens/PrinterScreen';
 import NativeTabNavigator from './navigation/NativeTabNavigator';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar style="light" />
-        <Stack.Navigator
-          initialRouteName="Login"
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-          }}
-        >
-          <Stack.Screen name="Login" component={LoginScreen} />
-          {/* This screen handles the initial login before switching to tabs */}
-          <Stack.Screen name="LoginProcess" component={WebViewScreen} />
-          <Stack.Screen name="MainTabs" component={NativeTabNavigator} />
-          <Stack.Screen
-            name="Printer"
-            component={PrinterScreen}
-            options={{ animation: 'slide_from_bottom' }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <StatusBar style="light" />
+          <Stack.Navigator
+            initialRouteName="Login"
+            screenOptions={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          >
+            <Stack.Screen name="Login" component={LoginScreen} />
+            {/* This screen handles the initial login before switching to tabs */}
+            <Stack.Screen name="LoginProcess" component={WebViewScreen} />
+            <Stack.Screen name="MainTabs" component={NativeTabNavigator} />
+            <Stack.Screen
+              name="Printer"
+              component={PrinterScreen}
+              options={{ animation: 'slide_from_bottom' }}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

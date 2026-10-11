@@ -50,3 +50,16 @@ static/uploads/*
 
 # Logs
 *.log
+
+# Android and Node build outputs
+node_modules/
+captain_app/node_modules/
+mobile_app/node_modules/
+captain_app/android/
+mobile_app/android/
+mobile_app/dist/
+instance/
+*.db
+__pycache__/
+*.pyc
+
